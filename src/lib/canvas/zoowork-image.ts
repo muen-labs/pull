@@ -276,7 +276,8 @@ export async function composeLook(
       for (let attempt = 0; attempt < 2 && read.length < 20; attempt += 1) {
         // One attempt gets at most 90s, and a retry only happens with room for the render.
         if (attempt > 0 && remaining() < 170_000) break
-        const readBudget = Math.min(90_000, Math.max(20_000, remaining() - 150_000))
+        const readCap = remaining() > 240_000 ? 120_000 : 90_000
+        const readBudget = Math.min(readCap, Math.max(20_000, remaining() - 150_000))
         try {
           const session = await c.createSession(agentId, {
             initial_events: [{ type: "user.message", content }],

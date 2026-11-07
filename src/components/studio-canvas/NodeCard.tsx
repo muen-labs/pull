@@ -68,7 +68,7 @@ const clamp01 = (value: number) => Math.min(1, Math.max(0, value))
 
 const SOURCE_NOTE: Record<NonNullable<CanvasNode["promptSource"]>, string> = {
   assist: "written by the assistant · editable",
-  template: "template prompt · the assistant was unreachable",
+  template: "template prompt · the assistant did not answer in time",
   edited: "your prompt · the assistant is skipped",
 }
 
