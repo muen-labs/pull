@@ -34,9 +34,9 @@ export interface Look {
 }
 
 /**
- * The floor a house keeps: with stock left in its collection every removal is replaced, and once the
- * stock is spent the row may not be taken below five. A house that starts under five is not held —
- * five is a target, not a thing to invent looks for.
+ * The size a house's row aims for: five looks, refilled from the collection while it has spare looks
+ * — and the count a reseed re-picks. It is a target, not a floor: a removal is never blocked, so a
+ * row with nothing spare simply gets shorter.
  */
 export const MIN_PER_ROW = 5
 
@@ -78,11 +78,6 @@ interface ReviewBoardProps {
    * replacement from the same collection — the Taste skill reads that row.
    */
   onRemoveLook?: (look: Look, row: Look[]) => void
-  /**
-   * Whether a look may be removed. The parent owns the reserve, so it decides: with stock left a
-   * removal is always replaced; at the floor with none, the control is held.
-   */
-  canRemove?: (look: Look, rowCount: number) => boolean
   /**
    * `sheet` (default) is the hand-off from the start-job dialog: a fixed panel
    * that covers the page. `page` is the board opened directly at /board, where
@@ -138,7 +133,6 @@ export function ReviewBoard({
   progress,
   onBack,
   onRemoveLook,
-  canRemove,
   chrome = "sheet",
   switcher,
   onSuggest,
@@ -478,7 +472,6 @@ export function ReviewBoard({
               <div className="board-grid">
                 {list.map((look) => {
                   const isAdded = added.includes(look.id)
-                  const held = canRemove ? !canRemove(look, list.length) : false
                   const ready = look.status === "ready" && look.src
                   return (
                     <figure
@@ -550,13 +543,8 @@ export function ReviewBoard({
                                 type="button"
                                 aria-label={`Remove look ${look.lookNo} from the board`}
                                 onClick={() => removeLook(look)}
-                                disabled={held}
-                                title={
-                                  held
-                                    ? "This collection has no more looks — five is the minimum for a house."
-                                    : undefined
-                                }
-                                className="inline-flex size-7 items-center justify-center rounded-full border border-border bg-card text-foreground hover:border-foreground disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-border"
+                                title="Remove this look — the house refills from its own collection when it has a spare"
+                                className="inline-flex size-7 items-center justify-center rounded-full border border-border bg-card text-foreground hover:border-foreground"
                               >
                                 <X className="size-3.5" aria-hidden />
                               </button>
