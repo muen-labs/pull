@@ -104,7 +104,7 @@ export async function streamJson<T extends { ok: boolean }>(
         }
       }
     }
-    return result ?? failure("the run ended without a result")
+    return result ?? failure("the stream was cut off before the result — run again")
   } catch (error) {
     return failure(error instanceof Error ? error.message : "network error")
   }
