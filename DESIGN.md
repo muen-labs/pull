@@ -384,6 +384,12 @@ The studio's six-card graph is the demo's picture of the product: **four referen
   fixtures). The footer's time before a run is the estimate; after it, the measured value.
 - **Saving is the only way into the assets.** The save card writes the render into the panel and the
   panel opens itself; nothing else populates it.
+- **A reference shows the whole photograph** (2026-11-07). The image card wraps the picture's own
+  aspect ratio instead of cropping it to a square: the crop used to hide the hem of a look, and a
+  reference is precisely "the whole outfit" — the thing the stylist is drawing a border around. The
+  four references therefore sit in one row, because each card now grows with its picture and a 2×2
+  grid would overlap once the portrait references got tall; `Fit` measures the real card heights
+  rather than assuming a fixed one.
 - **The panel has two views, and the run history is the default** (2026-11-07). **Generations** lists
   every look this session rendered, newest first, with the prompt that made it and the model/time —
   the honest record of what was asked for. **Assets** is what the save card wrote into the job. They

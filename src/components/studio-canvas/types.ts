@@ -110,11 +110,13 @@ export const RUN_MS: Record<NodeKind, number> = {
 }
 
 export function initialNodes(refs: { name: string; image: string }[]): CanvasNode[] {
+  // One row of four: the portraits are tall now that thumbnails are not cropped, and a
+  // two-by-two grid would overlap once each card follows its picture's height.
   const spots = [
     { x: 32, y: 24 },
     { x: 320, y: 24 },
-    { x: 32, y: 388 },
-    { x: 320, y: 388 },
+    { x: 608, y: 24 },
+    { x: 896, y: 24 },
   ]
   const referenceNodes: CanvasNode[] = refs.slice(0, 4).map((ref, index) => ({
     id: `ref-${index + 1}`,
@@ -128,8 +130,8 @@ export function initialNodes(refs: { name: string; image: string }[]): CanvasNod
   }))
   return [
     ...referenceNodes,
-    { id: "compose", kind: "compose", step: 5, x: 640, y: 196, status: "idle" },
-    { id: "save", kind: "save", step: 6, x: 960, y: 196, status: "idle", filename: "look-27-v1.png" },
+    { id: "compose", kind: "compose", step: 5, x: 1204, y: 196, status: "idle" },
+    { id: "save", kind: "save", step: 6, x: 1504, y: 196, status: "idle", filename: "look-27-v1.png" },
   ]
 }
 
