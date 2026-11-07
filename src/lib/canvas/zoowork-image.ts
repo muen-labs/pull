@@ -39,8 +39,10 @@ export interface LookRef {
   name: string
   /** `data:image/…;base64,…` — the clean copy, used for the render. */
   dataUrl: string
-  /** The same image with the stylist's borders drawn on, read by the vision pass. */
-  markedDataUrl?: string
+  /** A small copy for the reading model, with the stylist's border baked in. */
+  assistDataUrl?: string
+  /** Whether the stylist drew a border on this reference (drives the hard clause). */
+  marked?: boolean
 }
 
 export interface LookResult {
@@ -135,18 +137,17 @@ async function uploadRefs(
   c: ZooworkClient,
   agentId: string,
   folder: string,
-  refs: LookRef[],
-  markedOnly: boolean,
+  sources: (string | undefined)[],
+  names: string[],
 ): Promise<(string | undefined)[]> {
   const paths: (string | undefined)[] = []
-  for (const [index, ref] of refs.entries()) {
-    const source = markedOnly ? ref.markedDataUrl : ref.dataUrl
+  for (const [index, source] of sources.entries()) {
     if (!source) {
       paths.push(undefined)
       continue
     }
     const ext = EXT[mimeOf(source)] ?? "png"
-    const path = `refs/${folder}/${index + 1}-${slug(ref.name)}.${ext}`
+    const path = `refs/${folder}/${index + 1}-${slug(names[index] ?? "ref")}.${ext}`
     const uploaded = await c.uploadFile(agentId, path, toBuffer(source))
     paths.push(uploaded.path ?? `/workspace/${path}`)
   }
@@ -197,11 +198,17 @@ function cleanPrompt(raw: string): string {
  */
 export function templatePrompt(refs: LookRef[]): string {
   const count = Math.max(1, refs.length)
+  const bordered = refs.filter((ref) => ref.marked).length
   return (
     `Editorial full-length fashion photograph built from ${count} references: dress the person ` +
-    `in the outfit the references show, treating any red border as the exact garment to carry ` +
-    `over. Keep the person's face and hair exactly; carry each garment's colour, cut and fabric ` +
-    `from its own reference. Plain studio background, soft daylight, whole outfit visible.`
+    `in the outfit the references show. ` +
+    (bordered > 0
+      ? `${bordered} reference${bordered === 1 ? "" : "s"} carried a red border; each contributes ` +
+        `exactly the piece inside its border, and every one of those pieces must appear in the ` +
+        `final look — do not drop one. `
+      : "") +
+    `Keep the person's face and hair exactly; carry each garment's colour, cut and fabric from ` +
+    `its own reference. Plain studio background, soft daylight, whole outfit visible.`
   )
 }
 
@@ -231,10 +238,18 @@ export async function composeLook(
   const agentId = await ensureAgent(c)
 
   say("uploading the references")
-  const cleanPaths = (await uploadRefs(c, agentId, "look", refs, false)).filter(
+  const names = refs.map((ref) => ref.name)
+  const cleanPaths = (await uploadRefs(c, agentId, "look", refs.map((ref) => ref.dataUrl), names)).filter(
     (path): path is string => Boolean(path),
   )
   if (cleanPaths.length === 0) throw new Error("no references to compose")
+  const assistPaths = await uploadRefs(
+    c,
+    agentId,
+    "look-read",
+    refs.map((ref) => ref.assistDataUrl ?? ref.dataUrl),
+    names,
+  )
 
   let prompt = givenPrompt?.trim() ?? ""
   let promptSource: LookResult["promptSource"] = "edited"
@@ -243,14 +258,10 @@ export async function composeLook(
     // A cold agent or a dropped stream is transient, so read twice before falling back.
     let read = ""
     try {
-      const marked = refs.map((ref) => Boolean(ref.markedDataUrl))
-      const assistPaths = marked.some(Boolean)
-        ? await uploadRefs(c, agentId, "look-marked", refs, true)
-        : cleanPaths
       const list = refs
         .map((ref, index) => {
           const path = assistPaths[index] ?? cleanPaths[index] ?? "(missing)"
-          const border = ref.markedDataUrl ? " — a red border is drawn on it" : ""
+          const border = ref.marked ? " — a red border is drawn on it" : ""
           return `${index + 1}. ${ref.name} — ${path}${border}`
         })
         .join("\n")
@@ -267,8 +278,11 @@ export async function composeLook(
         "Read the images with your image tool, then write ONE prompt for an image-edit model that",
         "dresses that person in those garments. Keep the person's face and hair exactly, and carry",
         "each garment's colour, cut and fabric from its own reference; let the pose and setting",
-        "follow the garment photographs. Be concrete about what each picture contributes. Reply",
-        "with the prompt only, at most 70 words — no preamble, no quotes, no markdown.",
+        "follow the garment photographs. EVERY reference with a red border must contribute the piece",
+        "inside that border — the final look must include all of them, and the prompt must say so",
+        "explicitly (name each one: outer layer, top, bottom). Be concrete about what each picture",
+        "contributes. Reply with the prompt only, at most 70 words — no preamble, no quotes, no",
+        "markdown.",
       ].join("\n")
 
       say("reading the pictures")
@@ -314,11 +328,16 @@ export async function composeLook(
   if (remaining() < 45_000) throw new Error("the run ran out of time before the render — try again")
   say("rendering the look · gpt-image-2")
   // One image_generate edit: the clean references, the prompt, a published Artifact.
+  const borderNotes = refs
+    .map((ref, index) => (ref.marked ? `- reference ${index + 1} carried a red border: the clean image here is the same picture without the line, and the piece inside that border must appear in the result` : null))
+    .filter((line): line is string => Boolean(line))
   const content = [
     "Use the image_generate tool now, with these arguments:",
     `- action: "edit"`,
     `- images: ${JSON.stringify(cleanPaths)}`,
     "- images: the references; the prompt says what each one contributes",
+    ...borderNotes,
+    "- the prompt is the contract: every garment it names must appear, and no bordered piece may be dropped",
     `- prompt: ${JSON.stringify(prompt)}`,
     `- size: "1024x1024"`,
     `- save: "/workspace/out/look.png"`,

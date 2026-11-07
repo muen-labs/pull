@@ -475,13 +475,8 @@ export function NodeCard({
           <p className="mt-1 font-mono text-[9px] leading-relaxed text-muted-foreground-soft">
             {node.prompt ? SOURCE_NOTE[node.promptSource ?? "assist"] : "gpt-image-2 · reads the four refs"}
           </p>
-
-          {node.output ? (
-            <div className="mt-2 aspect-square w-full overflow-hidden rounded-sm border border-border bg-muted">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={node.output} alt="" className="size-full object-cover object-top" />
-            </div>
-          ) : null}
+          {/* No render preview here: the save card shows the finished look once, and a second
+              copy inside the model card only competes with the prompt for the same eye. */}
         </div>
       ) : null}
 

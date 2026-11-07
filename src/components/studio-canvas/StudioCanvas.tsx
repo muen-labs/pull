@@ -536,10 +536,11 @@ export function StudioCanvas({
           const payload = await Promise.all(
             refs.map(async (ref) => ({
               name: ref.name,
+              // The render gets the clean picture; the reading pass gets a small copy with
+              // the stylist's border baked in, so vision stays fast enough to answer in time.
               dataUrl: await imageDataUrl(ref.image),
-              ...(ref.markup.length > 0
-                ? { markedDataUrl: await imageDataUrl(ref.image, { markup: ref.markup }) }
-                : {}),
+              assistDataUrl: await imageDataUrl(ref.image, { maxSize: 640, markup: ref.markup }),
+              marked: ref.markup.length > 0,
             })),
           )
           // The route streams a line per phase, so the card can say what is happening
