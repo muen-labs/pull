@@ -1,0 +1,69 @@
+PULL — submission video narration
+Voiced in ElevenLabs, then dropped into DaVinci Resolve with the screen recording.
+Paste this file as-is (blank lines are pauses). The timed version is pull-submission-video.srt.
+
+── Act 1 · the board ─────────────────────────────────────────────
+
+Every season, a stylist gets hundreds of runway screenshots.
+
+This is PULL — the whole job, from screenshots to signed-off looks.
+
+Drop in the folder.
+
+The agent reads every caption and trims it.
+
+Every look is filed under its house, ready to shortlist.
+
+Nothing is published until you say so.
+
+── Act 2 · the client link ───────────────────────────────────────
+
+Send one link. Your client opens it with no account, no app.
+
+They approve what they love, and pass the rest.
+
+And they can circle the exact piece they want, right on the look.
+
+That markup comes back to your board.
+
+── Act 3 · the requests ──────────────────────────────────────────
+
+From the approvals, the agent drafts one email per showroom.
+
+Every approved look, the shoot dates, the ship-to address.
+
+You read it, edit it, and approve it.
+
+Nothing leaves the studio until you approve it.
+
+── Act 4 · the studio, on ZooWork ────────────────────────────────
+
+The studio is where ZooWork does the heavy lifting.
+
+Four references, and a border you drew around one of them.
+
+The ZooWork agent reads the pictures and writes the edit prompt.
+
+GPT Image 2 renders the look — ZooWork's image model.
+
+Vision and image, both from ZooWork.
+
+Every call is mirrored to PRISM, with the model and the latency.
+
+── Act 5 · suggest looks ─────────────────────────────────────────
+
+The suggestions start from the client's own record.
+
+What they wore, and for which house.
+
+Then eight looks from each house's runway, each collection linked to its source.
+
+── Act 6 · close ─────────────────────────────────────────────────
+
+Every tool call and every model call, in the open.
+
+Models by ZooWork.
+
+Traces by PRISM.
+
+PULL. From screenshots to signed-off looks.

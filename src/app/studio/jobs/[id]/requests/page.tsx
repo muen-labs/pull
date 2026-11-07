@@ -1,9 +1,14 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { requireStylist } from "@/lib/auth"
+import { readTrace } from "@/lib/agent/tracer"
+import { prismConfigured } from "@/lib/agent/prism"
+import { ZOOWORK_IMAGE, ZOOWORK_LLM, type PrismCall, type PrismModels } from "@/lib/agent/prism-calls"
+import { env } from "@/lib/env"
 import { getJob } from "@/server/queries/jobs"
 import { getRequestsView } from "@/server/queries/requests"
 import { publicIntakePath } from "@/lib/share"
+import { PrismTraceWidget } from "@/components/PrismTraceWidget"
 import { LabelPanel } from "@/components/studio/LabelPanel"
 import {
   approveDraftForm,
@@ -47,6 +52,31 @@ export default async function RequestsPage({
   const { requests, missingContacts } = await getRequestsView(stylist.id, id)
   const approvedCount = requests.filter((row) => row.email?.status === "queued").length
   const sentCount = requests.filter((row) => row.email?.status === "sent").length
+
+  // The PRISM mirror for this job: the ZooWork calls the drafting actually made. Drafting itself is
+  // the deterministic template; "Rewrite with AI" is the call, and it keeps its model in the trace.
+  const trace = await readTrace(job.id, 200)
+  const prismCalls: PrismCall[] = trace
+    .filter((step) => step.tool === "zoowork.run")
+    .slice(-6)
+    .map((step) => {
+      const result = (step.result ?? {}) as { model?: string }
+      const args = (step.args ?? {}) as { kind?: string }
+      return {
+        id: step.id,
+        tool: "zoowork.run",
+        kind: "llm" as const,
+        status: step.status,
+        ...(typeof result.model === "string" ? { model: result.model } : {}),
+        durationMs: step.durationMs,
+        note: args.kind === "request-email" ? "rewrote one request email" : (args.kind ?? "agent task"),
+      }
+    })
+  const lastModel = prismCalls.find((call) => call.model)?.model
+  const prismModels: PrismModels = {
+    llm: lastModel ?? env().ZOOWORK_MODEL ?? ZOOWORK_LLM.alias,
+    image: ZOOWORK_IMAGE.alias,
+  }
 
   const banner = query.error
     ? { tone: "error" as const, text: query.error }
@@ -92,6 +122,17 @@ export default async function RequestsPage({
           {banner.text}
         </p>
       )}
+
+      {prismCalls.length > 0 ? (
+        <div style={{ maxWidth: 560 }}>
+          <PrismTraceWidget
+            calls={prismCalls}
+            models={prismModels}
+            sinkConfigured={prismConfigured()}
+            title="PRISM · ZooWork on this job"
+          />
+        </div>
+      ) : null}
 
       {requests.length === 0 ? (
         <section className="card" style={{ padding: 24 }}>

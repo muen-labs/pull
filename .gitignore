@@ -26,3 +26,6 @@ test-results/
 # Local scratch scrapes and drafts
 .rates*.json
 .draft*.json
+
+# Local scratch: screenshots, one-off scripts, throwaway worktrees
+tmp/

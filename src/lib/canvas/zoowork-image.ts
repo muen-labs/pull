@@ -21,12 +21,14 @@ import {
   type ZooworkClient,
 } from "@zoowork-ai/sdk"
 
+import { emitPrismExchange } from "@/lib/agent/prism"
+import { ZOOWORK_IMAGE, ZOOWORK_LLM, type PrismCall, type PrismModels } from "@/lib/agent/prism-calls"
 import { env } from "@/lib/env"
 
 const LABELS = { app: "pull-canvas", role: "look-editor" }
 const AGENT_NAME = "pull-canvas-agent"
-/** Reading model: vision-capable and the cheapest row that is. */
-const ASSIST_MODEL = "litellm/gemini-3.8-flash"
+/** Reading model: vision-capable and the cheapest row that is — ZooWork's LLM slot. */
+const ASSIST_MODEL = ZOOWORK_LLM.alias
 
 /**
  * The route's maxDuration is 300s; this budget keeps the whole compose inside it. A function
@@ -51,6 +53,13 @@ export interface LookResult {
   image: string
   ms: number
   artifactId: string | null
+  /**
+   * The ZooWork model calls this run made, with their real durations — the PRISM widget's data.
+   * A stylist-edited prompt skips the vision call, so a run can legitimately have one row.
+   */
+  calls: PrismCall[]
+  /** The two model slots, resolved from what the agent was provisioned with. */
+  models: PrismModels
 }
 
 export function canvasConfigured(): boolean {
@@ -113,6 +122,21 @@ async function ensureAgent(c: ZooworkClient): Promise<string> {
   }
   await c.waitUntilRunning(cachedAgentId, { timeoutMs: 45_000, intervalMs: 500 })
   return cachedAgentId
+}
+
+/**
+ * The model the agent was actually provisioned with. The platform reports the pinned model on the
+ * agent projection, so the widget can name the real LLM instead of guessing from a constant;
+ * a cold/older agent may not report it, in which case the configured fallback is the honest answer.
+ */
+async function declaredModel(c: ZooworkClient, agentId: string): Promise<string | undefined> {
+  try {
+    const agent = await c.getAgent(agentId)
+    const model = (agent.declared?.model ?? {}) as { primary?: string }
+    return model.primary
+  } catch {
+    return undefined
+  }
 }
 
 function toBuffer(dataUrl: string): Buffer {
@@ -180,6 +204,11 @@ async function readTurn(
   return { text: text.trim(), outcome }
 }
 
+/** Token count is enough for "wrote a 54-word prompt" — the widget says it, nobody counts it. */
+function countWords(text: string): number {
+  return text.split(/\s+/).filter(Boolean).length
+}
+
 /** Strip the wrappers models like to add around a prompt. */
 function cleanPrompt(raw: string): string {
   return raw
@@ -236,6 +265,18 @@ export async function composeLook(
   say("connecting to the agent")
   const c = client()
   const agentId = await ensureAgent(c)
+  const models: PrismModels = {
+    llm: (await declaredModel(c, agentId)) ?? env().ZOOWORK_MODEL ?? ASSIST_MODEL,
+    image: ZOOWORK_IMAGE.alias,
+  }
+  /** The model calls this run makes — the PRISM widget reads them, and PRISM mirrors each one. */
+  const calls: PrismCall[] = []
+  /** One PRISM session per compose run, so the vision and image calls read as one trajectory. */
+  const prismSessionId = `pull-canvas-${started}`
+  /** Kept outside the vision block so the exchange can be mirrored even when the pass fails. */
+  let visionContent = ""
+  let visionSessionId: string | undefined
+  let visionStarted = 0
 
   say("uploading the references")
   const names = refs.map((ref) => ref.name)
@@ -257,36 +298,36 @@ export async function composeLook(
   if (prompt.length < 20) {
     // A cold agent or a dropped stream is transient, so read twice before falling back.
     let read = ""
+    let lastError: unknown = null
+    const list = refs
+      .map((ref, index) => {
+        const path = assistPaths[index] ?? cleanPaths[index] ?? "(missing)"
+        const border = ref.marked ? " — a red border is drawn on it" : ""
+        return `${index + 1}. ${ref.name} — ${path}${border}`
+      })
+      .join("\n")
+    visionContent = [
+      "You are dressing one person for a single editorial look. The references are:",
+      list,
+      "",
+      "Nothing on these references names what it is. Read the pictures: one reference is the",
+      "person to dress, the others are garments — and each garment is a different part of the",
+      "outfit. A red border drawn on a picture marks the exact object to use from it. Work out",
+      "each reference's meaning yourself from what you see and from the borders; do not assume",
+      "an order.",
+      "",
+      "Read the images with your image tool, then write ONE prompt for an image-edit model that",
+      "dresses that person in those garments. Keep the person's face and hair exactly, and carry",
+      "each garment's colour, cut and fabric from its own reference; let the pose and setting",
+      "follow the garment photographs. EVERY reference with a red border must contribute the piece",
+      "inside that border — the final look must include all of them, and the prompt must say so",
+      "explicitly (name each one: outer layer, top, bottom). Be concrete about what each picture",
+      "contributes. Reply with the prompt only, at most 70 words — no preamble, no quotes, no",
+      "markdown.",
+    ].join("\n")
+    visionStarted = Date.now()
     try {
-      const list = refs
-        .map((ref, index) => {
-          const path = assistPaths[index] ?? cleanPaths[index] ?? "(missing)"
-          const border = ref.marked ? " — a red border is drawn on it" : ""
-          return `${index + 1}. ${ref.name} — ${path}${border}`
-        })
-        .join("\n")
-      const content = [
-        "You are dressing one person for a single editorial look. The references are:",
-        list,
-        "",
-        "Nothing on these references names what it is. Read the pictures: one reference is the",
-        "person to dress, the others are garments — and each garment is a different part of the",
-        "outfit. A red border drawn on a picture marks the exact object to use from it. Work out",
-        "each reference's meaning yourself from what you see and from the borders; do not assume",
-        "an order.",
-        "",
-        "Read the images with your image tool, then write ONE prompt for an image-edit model that",
-        "dresses that person in those garments. Keep the person's face and hair exactly, and carry",
-        "each garment's colour, cut and fabric from its own reference; let the pose and setting",
-        "follow the garment photographs. EVERY reference with a red border must contribute the piece",
-        "inside that border — the final look must include all of them, and the prompt must say so",
-        "explicitly (name each one: outer layer, top, bottom). Be concrete about what each picture",
-        "contributes. Reply with the prompt only, at most 70 words — no preamble, no quotes, no",
-        "markdown.",
-      ].join("\n")
-
       say("reading the pictures")
-      let lastError: unknown = null
       for (let attempt = 0; attempt < 2 && read.length < 20; attempt += 1) {
         // One attempt gets at most 90s, and a retry only happens with room for the render.
         if (attempt > 0 && remaining() < 170_000) break
@@ -294,9 +335,10 @@ export async function composeLook(
         const readBudget = Math.min(readCap, Math.max(20_000, remaining() - 150_000))
         try {
           const session = await c.createSession(agentId, {
-            initial_events: [{ type: "user.message", content }],
+            initial_events: [{ type: "user.message", content: visionContent }],
             metadata: { app: "pull-canvas", step: "read" },
           })
+          visionSessionId = session.session_id
           const turn = await readTurn(c, agentId, session.session_id, readBudget)
           const written = cleanPrompt(turn.text)
           if (turn.outcome === "succeeded" && written.length >= 20) read = written
@@ -307,6 +349,7 @@ export async function composeLook(
       }
       if (read.length < 20) console.error("canvas: vision pass failed, using the template prompt —", lastError)
     } catch (error) {
+      lastError = error
       console.error("canvas: vision pass errored, using the template prompt —", error)
     }
 
@@ -317,6 +360,42 @@ export async function composeLook(
       prompt = templatePrompt(refs)
       promptSource = "template"
     }
+
+    // The vision pass is a model call like any other: one row, its real duration, and a mirror
+    // to PRISM. A failed pass is mirrored too — that is the exchange worth watching.
+    const readMs = Date.now() - visionStarted
+    const wrote = promptSource === "assist"
+    const readError = wrote
+      ? undefined
+      : lastError instanceof Error
+        ? lastError.message
+        : "the vision pass returned nothing usable"
+    calls.push({
+      id: "vision",
+      tool: "zoowork.vision",
+      kind: "llm",
+      model: models.llm,
+      status: wrote ? "ok" : "error",
+      durationMs: readMs,
+      note: wrote ? `wrote a ${countWords(prompt)}-word prompt` : "no prompt written — template used",
+      ...(readError ? { error: readError } : {}),
+    })
+    emitPrismExchange({
+      model: models.llm ?? ASSIST_MODEL,
+      user: visionContent,
+      output: wrote ? prompt : "",
+      latencyMs: readMs,
+      sessionId: prismSessionId,
+      metadata: {
+        app: "pull-canvas",
+        kind: "vision",
+        provider: "zoowork",
+        zooworkSessionId: visionSessionId ?? null,
+        refs: refs.length,
+        marked: refs.filter((ref) => ref.marked).length,
+      },
+      ...(readError ? { error: readError } : {}),
+    })
   }
 
   // Never call the render with an empty prompt: the pictures alone are not an instruction.
@@ -346,11 +425,13 @@ export async function composeLook(
     "Do not substitute the prompt, and do not draw anything with exec.",
   ].join("\n")
 
+  const renderStarted = Date.now()
   const session = await c.createSession(agentId, {
     initial_events: [{ type: "user.message", content }],
     metadata: { app: "pull-canvas", step: "render" },
   })
   const turn = await readTurn(c, agentId, session.session_id, Math.max(20_000, remaining() - 15_000))
+  const renderMs = Date.now() - renderStarted
 
   say("saving the render")
   const page = await c.listArtifacts(agentId, { sessionId: session.session_id, page: 1, limit: 20 })
@@ -367,11 +448,40 @@ export async function composeLook(
   const buffer = Buffer.from(await response.arrayBuffer())
   const mime = response.headers.get("content-type") ?? "image/png"
 
+  // The render is the second model call: ZooWork's image slot, on the same key as the vision
+  // pass. Its real duration and artifact id go on the row and into the PRISM mirror.
+  calls.push({
+    id: "render",
+    tool: "zoowork.image_generate",
+    kind: "image",
+    model: models.image,
+    status: "ok",
+    durationMs: renderMs,
+    note: `edit · 1024×1024 · ${ready.artifact_id}`,
+  })
+  emitPrismExchange({
+    model: models.image ?? ZOOWORK_IMAGE.alias,
+    user: content,
+    output: `artifact ${ready.artifact_id} (${mime}, ${buffer.byteLength} bytes)`,
+    latencyMs: renderMs,
+    sessionId: prismSessionId,
+    metadata: {
+      app: "pull-canvas",
+      kind: "image_generate",
+      provider: "zoowork",
+      zooworkSessionId: session.session_id,
+      size: "1024x1024",
+      promptSource,
+    },
+  })
+
   return {
     prompt,
     promptSource,
     image: `data:${mime};base64,${buffer.toString("base64")}`,
     ms: Date.now() - started,
     artifactId: ready.artifact_id,
+    calls,
+    models,
   }
 }

@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs"
 import { join } from "node:path"
 
 import { StudioCanvas } from "@/components/studio-canvas/StudioCanvas"
+import { prismConfigured } from "@/lib/agent/prism"
+import { ZOOWORK_IMAGE, ZOOWORK_LLM } from "@/lib/agent/prism-calls"
 
 export const metadata = { title: "Pull — studio" }
 
@@ -53,7 +55,12 @@ export default function StudioPage() {
 
   return (
     <main>
-      <StudioCanvas refs={refs} sampleAssets={sampleAssets} />
+      <StudioCanvas
+        refs={refs}
+        sampleAssets={sampleAssets}
+        prismConfigured={prismConfigured()}
+        models={{ llm: ZOOWORK_LLM.alias, image: ZOOWORK_IMAGE.alias }}
+      />
     </main>
   )
 }
