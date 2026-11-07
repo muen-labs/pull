@@ -9,11 +9,12 @@
  *
  * Type: one typeface throughout, per Juje. No mono.
  */
-import { useMemo, useState, type ReactNode } from "react"
-import { Check, Plus, Sparkles, X } from "lucide-react"
+import { useEffect, useMemo, useState, type ReactNode } from "react"
+import { Check, Plus, RotateCcw, Sparkles, Trash2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { readBoardTaste, type TasteTraits } from "@/lib/taste"
 import type { IngestStep } from "./ingest"
 
 export type LookStatus = "queued" | "cropping" | "reading" | "ready" | "error"
@@ -30,6 +31,24 @@ export interface Look {
   status: LookStatus
   src?: string
   steps?: IngestStep[]
+}
+
+/**
+ * The floor a house keeps: with stock left in its collection every removal is replaced, and once the
+ * stock is spent the row may not be taken below five. A house that starts under five is not held —
+ * five is a target, not a thing to invent looks for.
+ */
+export const MIN_PER_ROW = 5
+
+/**
+ * Ids for a suggested look. `Date.now()` looked unique but two looks added in the same millisecond —
+ * a designer's shown and reserve lists are read in one tick — collided, which React reports as a
+ * duplicate key. A counter is cheap and cannot repeat.
+ */
+let suggestionSeq = 0
+export function suggestionId(slug: string, lookNo: number): string {
+  suggestionSeq += 1
+  return `suggested:${slug}:${lookNo}:${suggestionSeq}`
 }
 
 export interface BoardJob {
@@ -54,8 +73,16 @@ interface ReviewBoardProps {
   /** Live ingest progress; omitted on the static board. */
   progress?: { done: number; total: number; label: string } | null
   onBack?: () => void
-  /** Called after a look is removed, so the start-job flow can refill it from the same collection. */
-  onRemoveLook?: (look: Look) => void
+  /**
+   * Called after a look is removed, with the row it left behind, so the owner can pick a
+   * replacement from the same collection — the Taste skill reads that row.
+   */
+  onRemoveLook?: (look: Look, row: Look[]) => void
+  /**
+   * Whether a look may be removed. The parent owns the reserve, so it decides: with stock left a
+   * removal is always replaced; at the floor with none, the control is held.
+   */
+  canRemove?: (look: Look, rowCount: number) => boolean
   /**
    * `sheet` (default) is the hand-off from the start-job dialog: a fixed panel
    * that covers the page. `page` is the board opened directly at /board, where
@@ -64,6 +91,33 @@ interface ReviewBoardProps {
   chrome?: "sheet" | "page"
   /** Rendered beside the client's name — the board switcher, on the static page. */
   switcher?: ReactNode
+  /** The agent's next move on a live board: pull more houses while the stylist is selecting. */
+  onSuggest?: () => void
+  suggesting?: boolean
+  suggestError?: string | null
+  /** One line from the Taste skill: which look it picked and why. */
+  tasteNote?: string | null
+  /** Re-pick every house from its collection against the pattern the chips read. */
+  onReseed?: () => void
+  reseeding?: boolean
+}
+
+/** One direction of the Taste read — colour, texture or shape — as a labelled chip group. */
+function ChipGroup({ label, values }: { label: string; values: string[] }) {
+  if (!values.length) return null
+  return (
+    <span className="flex flex-wrap items-center gap-2">
+      <span className="text-[10px] tracking-[0.02em] text-muted-foreground-soft">{label}</span>
+      {values.map((value) => (
+        <span
+          key={value}
+          className="rounded-full border border-border bg-card px-2.5 py-0.5 text-[11px] leading-5 text-foreground"
+        >
+          {value}
+        </span>
+      ))}
+    </span>
+  )
 }
 
 function groupByBrand(looks: Look[]) {
@@ -84,26 +138,86 @@ export function ReviewBoard({
   progress,
   onBack,
   onRemoveLook,
+  canRemove,
   chrome = "sheet",
   switcher,
+  onSuggest,
+  suggesting = false,
+  suggestError,
+  tasteNote,
+  onReseed,
+  reseeding = false,
 }: ReviewBoardProps) {
   const [added, setAdded] = useState<string[]>([])
   const [sendState, setSendState] = useState<"idle" | "needs-backend">("idle")
 
-  // Removing is local to this surface — nothing is persisted, and the seeded
-  // board should come back on reload.
-  const [removed, setRemoved] = useState<string[]>([])
-  const visible = useMemo(() => looks.filter((l) => !removed.includes(l.id)), [looks, removed])
+  // Removing is a soft delete: the look leaves the board but stays in the bin until it is
+  // restored. Nothing is persisted, so the seeded board comes back on reload.
+  const [removed, setRemoved] = useState<Look[]>([])
+  const removedIds = useMemo(() => new Set(removed.map((look) => look.id)), [removed])
+  const visible = useMemo(() => {
+    // One house cannot show the same look twice. Two runs can hand back the same look under
+    // different ids (a re-press, a reserve that overlapped), so the board is unambiguous here
+    // even when the data is not.
+    const seen = new Set<string>()
+    return looks.filter((look) => {
+      if (removedIds.has(look.id)) return false
+      const key = `${look.brand}|${look.lookNo}|${look.season ?? ""}`
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+  }, [looks, removedIds])
   const grouped = useMemo(() => groupByBrand(visible), [visible])
   const addedLooks = useMemo(() => visible.filter((l) => added.includes(l.id)), [visible, added])
+
+  // The pattern across the board, read in the browser and shown as chips under the title. It
+  // follows the pictures that are still on the board, so a delete shifts what the board reads as.
+  const [chips, setChips] = useState<TasteTraits | null>(null)
+  /** The house the stylist last worked in: the chips read that row, not the whole board. */
+  const [focus, setFocus] = useState<string | null>(null)
+  const tasteSources = useMemo(
+    () =>
+      visible
+        .filter((look) => !focus || look.brand === focus)
+        .flatMap((look) => (look.src ? [look.src] : [])),
+    [visible, focus],
+  )
+  useEffect(() => {
+    let cancelled = false
+    const timer = setTimeout(() => {
+      void readBoardTaste(tasteSources).then((traits) => {
+        if (!cancelled) setChips(traits)
+      })
+    }, 250)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [tasteSources])
 
   const toggleAdded = (id: string) =>
     setAdded((current) => (current.includes(id) ? current.filter((x) => x !== id) : [...current, id]))
 
   const removeLook = (look: Look) => {
-    setRemoved((current) => (current.includes(look.id) ? current : [...current, look.id]))
+    setFocus(look.brand)
+    const row = visible.filter((entry) => entry.brand === look.brand && entry.id !== look.id)
+    setRemoved((current) => (current.some((entry) => entry.id === look.id) ? current : [...current, look]))
     setAdded((current) => current.filter((x) => x !== look.id))
-    onRemoveLook?.(look)
+    onRemoveLook?.(look, row)
+  }
+
+  const restoreLook = (look: Look) =>
+    setRemoved((current) => current.filter((entry) => entry.id !== look.id))
+
+  /** Remove a house from the board: every look goes to the bin, so the house can come back. */
+  const removeBrand = (brand: string, row: Look[]) => {
+    // If the chips were reading this house, they fall back to the board rather than vanishing.
+    setFocus((current) => (current === brand ? null : current))
+    setRemoved((current) => {
+      const ids = new Set(current.map((entry) => entry.id))
+      return [...current, ...row.filter((look) => !ids.has(look.id))]
+    })
   }
 
   return (
@@ -130,6 +244,16 @@ export function ReviewBoard({
             {job.description.trim() && job.title ? (
               <p className="text-[12px] tracking-[0.02em] text-muted-foreground">{job.title}</p>
             ) : null}
+            {suggestError ? (
+              <p role="status" className="text-[11px] text-[var(--destructive)]">
+                {suggestError}
+              </p>
+            ) : null}
+            {tasteNote ? (
+              <p role="status" className="text-[11px] text-muted-foreground">
+                <span className="text-brand">Taste</span> · {tasteNote}
+              </p>
+            ) : null}
           </div>
 
           <div className="flex items-start justify-between gap-3 md:ml-auto md:justify-end">
@@ -146,6 +270,84 @@ export function ReviewBoard({
                 {job.email || "No contact email"}
               </span>
             </div>
+
+            {onSuggest ? (
+              <Button
+                variant="ghost"
+                className="agent-action shrink-0"
+                onClick={onSuggest}
+                disabled={suggesting}
+              >
+                <Sparkles className="size-4" aria-hidden />
+                {suggesting ? "Finding more looks…" : "Find more looks"}
+              </Button>
+            ) : null}
+
+            {/* The bin: deleting a look is soft, so anything removed can come back. */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  disabled={removed.length === 0}
+                  aria-label={
+                    removed.length
+                      ? `Deleted looks, ${removed.length} to restore`
+                      : "Deleted looks, none"
+                  }
+                >
+                  <Trash2 className="size-3.5" aria-hidden />
+                  Deleted
+                  {removed.length ? (
+                    <span className="font-mono text-[10px] text-muted-foreground">{removed.length}</span>
+                  ) : null}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-[380px] p-4">
+                <p className="text-[13px] text-muted-foreground">
+                  {removed.length === 0
+                    ? "Nothing deleted yet."
+                    : `${removed.length} look${removed.length === 1 ? "" : "s"} deleted — restore any of them.`}
+                </p>
+                {removed.length ? (
+                  <ul className="mt-3 flex max-h-[320px] flex-col gap-2 overflow-y-auto">
+                    {removed.map((look) => (
+                      <li key={look.id} className="flex items-center gap-3">
+                        {look.src ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={look.src}
+                            alt={`${look.brand} look ${look.lookNo}`}
+                            className="aspect-[3/4] w-9 shrink-0 border border-border object-cover"
+                          />
+                        ) : (
+                          <span className="aspect-[3/4] w-9 shrink-0 border border-border bg-muted" />
+                        )}
+                        <span className="min-w-0 flex-1 text-[12px] leading-snug text-foreground">
+                          {look.brand}
+                          <span className="text-muted-foreground"> · Look {look.lookNo}</span>
+                        </span>
+                        <Button variant="outline" size="sm" onClick={() => restoreLook(look)}>
+                          <RotateCcw className="size-3.5" aria-hidden />
+                          Restore
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                {removed.length > 1 ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="mt-3 w-full"
+                    onClick={() => setRemoved([])}
+                  >
+                    Restore all
+                  </Button>
+                ) : null}
+              </PopoverContent>
+            </Popover>
 
             {/* Cart in the header: the count is always visible, the shortlist is one click away. */}
             <Popover>
@@ -198,20 +400,21 @@ export function ReviewBoard({
                     Hover a look and press + to shortlist it.
                   </p>
                 )}
+                {/* The action stays: pressing it explains why nothing can be minted here, it does
+                    not consume the control. */}
+                <Button
+                  className="mt-4 w-full"
+                  disabled={added.length === 0}
+                  onClick={() => setSendState("needs-backend")}
+                >
+                  Send to client
+                </Button>
                 {sendState === "needs-backend" ? (
-                  <p role="status" className="mt-4 rounded-md border border-border bg-muted p-3 text-[12px] leading-snug text-foreground">
+                  <p role="status" className="mt-3 rounded-md border border-border bg-muted p-3 text-[12px] leading-snug text-foreground">
                     Held in the browser. Minting the client link and emailing it needs the database
                     connection, so nothing was sent.
                   </p>
-                ) : (
-                  <Button
-                    className="mt-4 w-full"
-                    disabled={added.length === 0}
-                    onClick={() => setSendState("needs-backend")}
-                  >
-                    Send to client
-                  </Button>
-                )}
+                ) : null}
               </PopoverContent>
             </Popover>
 
@@ -222,6 +425,29 @@ export function ReviewBoard({
             ) : null}
           </div>
         </div>
+
+        {chips ? (
+          <div className="mx-auto flex max-w-[1440px] flex-wrap items-center gap-x-6 gap-y-2 px-6 pb-4 md:px-10">
+            <span className="text-[10px] tracking-[0.02em] text-muted-foreground">
+              Taste · {focus ?? "the board"}
+            </span>
+            <ChipGroup label="colour" values={chips.color} />
+            <ChipGroup label="texture" values={chips.texture} />
+            <ChipGroup label="shape" values={chips.shape} />
+            {onReseed ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="ml-auto shrink-0"
+                onClick={onReseed}
+                disabled={reseeding}
+              >
+                <Sparkles className="size-3.5" aria-hidden />
+                {reseeding ? "Reseeding…" : "Reseed from taste"}
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
       </header>
 
       <div className="mx-auto max-w-[1440px] px-6 pb-16 pt-10 md:px-10">
@@ -230,9 +456,21 @@ export function ReviewBoard({
           {grouped.map(([brand, list]) => (
             <section key={brand} className="flex flex-col gap-4">
               <div className="flex items-baseline justify-between gap-4 border-b border-border pb-3">
-                <h3 className="text-[20px] font-medium leading-none tracking-[0.02em] text-foreground">
-                  {brand}
-                </h3>
+                <div className="group flex min-w-0 items-baseline gap-2">
+                  <h3 className="text-[20px] font-medium leading-none tracking-[0.02em] text-foreground">
+                    {brand}
+                  </h3>
+                  {/* Hovering the house offers to take it off the board; the looks go to the bin. */}
+                  <button
+                    type="button"
+                    aria-label={`Remove ${brand} from the board`}
+                    title={`Remove ${brand} from the board`}
+                    onClick={() => removeBrand(brand, list)}
+                    className="inline-flex size-6 shrink-0 items-center justify-center text-muted-foreground-soft opacity-0 transition-opacity hover:text-[var(--destructive)] focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring group-hover:opacity-100"
+                  >
+                    <Trash2 className="size-3.5" aria-hidden />
+                  </button>
+                </div>
                 <span className="text-[10px] tracking-[0.02em] text-muted-foreground">
                   {list.length} look{list.length === 1 ? "" : "s"}
                 </span>
@@ -240,6 +478,7 @@ export function ReviewBoard({
               <div className="board-grid">
                 {list.map((look) => {
                   const isAdded = added.includes(look.id)
+                  const held = canRemove ? !canRemove(look, list.length) : false
                   const ready = look.status === "ready" && look.src
                   return (
                     <figure
@@ -311,7 +550,13 @@ export function ReviewBoard({
                                 type="button"
                                 aria-label={`Remove look ${look.lookNo} from the board`}
                                 onClick={() => removeLook(look)}
-                                className="inline-flex size-7 items-center justify-center rounded-full border border-border bg-card text-foreground hover:border-foreground"
+                                disabled={held}
+                                title={
+                                  held
+                                    ? "This collection has no more looks — five is the minimum for a house."
+                                    : undefined
+                                }
+                                className="inline-flex size-7 items-center justify-center rounded-full border border-border bg-card text-foreground hover:border-foreground disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-border"
                               >
                                 <X className="size-3.5" aria-hidden />
                               </button>
