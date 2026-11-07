@@ -6,7 +6,7 @@
  * surface can be designed without publishing a board: decisions are local, and
  * "Send approvals" only acknowledges.
  */
-import { ClientBoard } from "@/components/client-view/ClientBoard"
+import { ClientBoardPage } from "@/components/client-view/ClientBoardPage"
 import { seededLooks } from "@/lib/fixtures"
 
 export const metadata = {
@@ -16,11 +16,9 @@ export const metadata = {
 
 export default function ClientPage() {
   return (
-    <>
-      <ClientBoard
-        job={{ title: "Dune Tour", client: "Timothée Chalamet", dueDate: "2027-12-01" }}
-        looks={seededLooks()}
-      />
-    </>
+    <ClientBoardPage
+      defaultJob={{ title: "Dune Tour", client: "Timothée Chalamet", dueDate: "2027-12-01" }}
+      defaultLooks={seededLooks()}
+    />
   )
 }
