@@ -56,12 +56,20 @@ const ACTS: DemoAct[] = [
     title: "Act 3 · intake and labels",
     hint: "Shippo rates, the gated buy, then the label reply.",
   },
+  {
+    // Not an act of the run-of-show — the surface where the look is actually made.
+    href: "/canvas",
+    label: "studio",
+    title: "The studio · look workflow",
+    hint: "Four references in, one look out — gpt-image-2 renders it.",
+  },
 ]
 
 const STORAGE_KEY = "pull:demo-guide"
 
 /** Which act the current route belongs to. Ordered most specific first. */
 function actFor(pathname: string): number {
+  if (pathname.startsWith("/canvas")) return 3
   if (pathname.startsWith("/b/") || pathname.startsWith("/client")) return 1
   if (pathname === "/requests" || pathname.startsWith("/requests/")) return 2
   if (pathname.startsWith("/i/")) return 2

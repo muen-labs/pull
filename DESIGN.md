@@ -332,7 +332,7 @@ taking its colours: numbered steps, technical labels, hairlines, and the same ne
 
 ## 10. The demo guide (2026-11-07)
 
-The hackathon demo is a script with three acts (`DEMO.md`), so the demo surfaces carry one chrome row
+The hackathon demo is a script with three acts (`DEMO.md`) plus the studio surface, so the demo surfaces carry one chrome row
 above them: **the acts as a track, the act in hand named with its instruction, and the press that moves
 the story on.** It is rendered from the root layout and precedes the site header, the studio header and
 the dark client board alike.
@@ -340,7 +340,8 @@ the dark client board alike.
 - **A guide is chrome, not content.** Hairline, hard corner, no fill of its own beyond `--card`; the live
   act's **number** is the only olive on the row, and the act's **name** — never its instruction — carries
   the weight. The instruction is `--muted-foreground`, one line, ellipsised, hidden below 900px.
-- **The acts are a track, not a menu.** Three labelled steps divided by hairlines; the current one is ink
+- **The acts are a track, not a menu.** Four labelled steps divided by hairlines — the three acts plus `studio`, the look workflow, which is
+  its own place in the story and not an act; the current one is ink
   with a brand number, the others are secondary. Every step is a link to the screen that act opens with,
   so the guide is also the fastest way to jump between acts mid-story.
 - **Act 1 opens `/board`, not `/studio`** (2026-11-07). `/studio` sits behind `requireStylist`, so a
