@@ -230,7 +230,8 @@ export async function composeLook(
   let promptSource: LookResult["promptSource"] = "edited"
 
   if (prompt.length < 20) {
-    promptSource = "assist"
+    // A cold agent or a dropped stream is transient, so read twice before falling back.
+    let read = ""
     try {
       const marked = refs.map((ref) => Boolean(ref.markedDataUrl))
       const assistPaths = marked.some(Boolean)
@@ -259,11 +260,10 @@ export async function composeLook(
         "follow the garment photographs. Be concrete about what each picture contributes. Reply",
         "with the prompt only, at most 70 words — no preamble, no quotes, no markdown.",
       ].join("\n")
+
       say("reading the pictures")
-      // One retry: a cold agent or a dropped stream is transient, and the render is
-      // cheap next to the demo falling back to the template for a network blip.
       let lastError: unknown = null
-      for (let attempt = 0; attempt < 2 && promptSource !== "assist"; attempt += 1) {
+      for (let attempt = 0; attempt < 2 && read.length < 20; attempt += 1) {
         try {
           const session = await c.createSession(agentId, {
             initial_events: [{ type: "user.message", content }],
@@ -271,26 +271,30 @@ export async function composeLook(
           })
           const turn = await readTurn(c, agentId, session.session_id, 240_000)
           const written = cleanPrompt(turn.text)
-          if (turn.outcome === "succeeded" && written.length >= 20) {
-            prompt = written
-            promptSource = "assist"
-          } else {
-            lastError = new Error(`read turn ${turn.outcome ?? "ended early"} (${written.length} chars)`)
-          }
+          if (turn.outcome === "succeeded" && written.length >= 20) read = written
+          else lastError = new Error(`read turn ${turn.outcome ?? "ended early"} (${written.length} chars)`)
         } catch (error) {
           lastError = error
         }
       }
-      if (promptSource !== "assist") {
-        console.error("canvas: vision pass failed, using the template prompt —", lastError)
-        prompt = templatePrompt(refs)
-        promptSource = "template"
-      }
-    } catch {
-      // The demo must render even when the reading model is unreachable.
+      if (read.length < 20) console.error("canvas: vision pass failed, using the template prompt —", lastError)
+    } catch (error) {
+      console.error("canvas: vision pass errored, using the template prompt —", error)
+    }
+
+    if (read.length >= 20) {
+      prompt = read
+      promptSource = "assist"
+    } else {
       prompt = templatePrompt(refs)
       promptSource = "template"
     }
+  }
+
+  // Never call the render with an empty prompt: the pictures alone are not an instruction.
+  if (prompt.trim().length < 20) {
+    prompt = templatePrompt(refs)
+    promptSource = "template"
   }
 
   say("rendering the look · gpt-image-2")
