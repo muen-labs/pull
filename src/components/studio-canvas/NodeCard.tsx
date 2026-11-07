@@ -391,6 +391,18 @@ export function NodeCard({
               </div>
             )}
 
+            {node.overlay ? (
+              // The client's pen, exactly as they drew it, over the same photograph.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={node.overlay}
+                alt=""
+                aria-hidden
+                draggable={false}
+                className="pointer-events-none absolute inset-0 size-full object-cover"
+              />
+            ) : null}
+
             {[...markup, ...(draft ? [draft] : [])].map((rect, index) => (
               <span
                 key={index}

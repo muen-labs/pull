@@ -18,6 +18,7 @@ import type { PointerEvent } from "react"
 import { Button } from "@/components/ui/button"
 import { NodeCard } from "./NodeCard"
 import { imageDataUrl, streamJson } from "./image-bits"
+import { approvedAssets, readApproval, subscribeApproval, type ApprovedLook } from "@/lib/approved-store"
 import {
   INITIAL_EDGES,
   KIND,
@@ -43,7 +44,7 @@ interface StudioGeneration {
   ms: number
 }
 
-const PANEL_TABS = ["generations", "assets"] as const
+const PANEL_TABS = ["generations", "assets", "approved"] as const
 type PanelTab = (typeof PANEL_TABS)[number]
 const DOTS = "radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--border) 70%, transparent) 1px, transparent 0)"
 
@@ -74,6 +75,8 @@ export function StudioCanvas({
   const [completed, setCompleted] = useState(0)
   const [assets, setAssets] = useState<string[]>([])
   const [generations, setGenerations] = useState<StudioGeneration[]>([])
+  /** What the client approved — the same record the bell and /approved read. */
+  const [approved, setApproved] = useState<ApprovedLook[]>([])
   const [tab, setTab] = useState<PanelTab>("generations")
   const [stubNote, setStubNote] = useState<string | null>(null)
   const [assetsOpen, setAssetsOpen] = useState(false)
@@ -151,6 +154,13 @@ export function StudioCanvas({
     observer.observe(element)
     setPanelWidth(element.offsetWidth)
     return () => observer.disconnect()
+  }, [])
+
+  // The client's approval is a store, not a prop: the studio picks it up when it lands.
+  useEffect(() => {
+    const sync = () => setApproved(approvedAssets(readApproval()))
+    sync()
+    return subscribeApproval(sync)
   }, [])
 
   // Open on the whole graph: the demo should show every card without hunting for it.
@@ -516,6 +526,7 @@ export function StudioCanvas({
         .map((node) => ({
           name: node.imageLabel ?? node.id,
           image: node.image as string,
+          overlay: node.overlay,
           markup: node.markup ?? [],
         }))
 
@@ -539,7 +550,11 @@ export function StudioCanvas({
               // The render gets the clean picture; the reading pass gets a small copy with
               // the stylist's border baked in, so vision stays fast enough to answer in time.
               dataUrl: await imageDataUrl(ref.image),
-              assistDataUrl: await imageDataUrl(ref.image, { maxSize: 640, markup: ref.markup }),
+              assistDataUrl: await imageDataUrl(ref.image, {
+                maxSize: 640,
+                markup: ref.markup,
+                overlay: ref.overlay,
+              }),
               marked: ref.markup.length > 0,
             })),
           )
@@ -674,6 +689,41 @@ export function StudioCanvas({
           onPointerMove={onCanvasMove}
           onPointerUp={onCanvasUp}
           onPointerCancel={onCanvasUp}
+          onDragOver={(event) => {
+            if (!event.dataTransfer.types.includes("application/x-pull-approved")) return
+            event.preventDefault()
+            event.dataTransfer.dropEffect = "copy"
+          }}
+          onDrop={(event) => {
+            const raw = event.dataTransfer.getData("application/x-pull-approved")
+            if (!raw) return
+            event.preventDefault()
+            try {
+              const look = JSON.parse(raw) as ApprovedLook
+              const point = toCanvas(event.clientX, event.clientY)
+              const id = `upl-${Math.random().toString(36).slice(2, 7)}`
+              // The select becomes a reference card, with the client's markup as its overlay:
+              // the stylist wires it into the compose card and the reading pass sees the pen.
+              setNodes((current) => [
+                ...current,
+                {
+                  id,
+                  kind: "upload",
+                  step: nextStep(),
+                  // Keep the card on the canvas: a drop near an edge should not park it off-canvas.
+                  x: Math.max(0, Math.round(point.x) - NODE_WIDTH / 2),
+                  y: Math.max(0, Math.round(point.y) - 20),
+                  status: "idle",
+                  image: look.image,
+                  ...(look.markup ? { overlay: look.markup } : {}),
+                  imageLabel: `approved · ${look.brand} ${look.lookNo}`,
+                },
+              ])
+              setSelected(id)
+            } catch {
+              // A payload we cannot read is not worth an error on stage.
+            }
+          }}
           className="absolute inset-y-0 left-0 cursor-grab touch-none select-none bg-background transition-[right] duration-500 ease-out active:cursor-grabbing"
           style={{
             right: assetsOpen && wide ? panelWidth : 0,
@@ -842,7 +892,9 @@ export function StudioCanvas({
             <div role="tablist" aria-label="Studio panel" className="flex items-center gap-1">
               {PANEL_TABS.map((key) => {
                 const selected = tab === key
-                const count = key === "generations" ? generations.length : assets.length
+                const label = key === "generations" ? "Generations" : key === "assets" ? "Assets" : "Approved"
+                const count =
+                  key === "generations" ? generations.length : key === "assets" ? assets.length : approved.length
                 return (
                   <button
                     key={key}
@@ -858,7 +910,7 @@ export function StudioCanvas({
                         : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                     }`}
                   >
-                    {key === "generations" ? "Generations" : "Assets"} · {count}
+                    {label} · {count}
                   </button>
                 )
               })}
@@ -906,7 +958,7 @@ export function StudioCanvas({
                 </ul>
               )}
             </div>
-          ) : (
+          ) : tab === "assets" ? (
             <div
               role="tabpanel"
               id="studio-panel-assets"
@@ -934,11 +986,71 @@ export function StudioCanvas({
                 </ul>
               )}
             </div>
+          ) : (
+            <div
+              role="tabpanel"
+              id="studio-panel-approved"
+              aria-labelledby="studio-tab-approved"
+              className="flex-1 overflow-y-auto"
+            >
+              {approved.length === 0 ? (
+                <p className="px-3 py-6 text-[11px] leading-relaxed text-muted-foreground">
+                  Nothing approved yet. When the client sends approvals, their selects land here with
+                  the markups they drew — drag one onto the canvas to build a look from it.
+                </p>
+              ) : (
+                <ul className="divide-y divide-border">
+                  {approved.map((look) => (
+                    <li key={look.id} className="bg-card p-2">
+                      <div
+                        draggable
+                        onDragStart={(event) => {
+                          event.dataTransfer.setData("application/x-pull-approved", JSON.stringify(look))
+                          event.dataTransfer.effectAllowed = "copy"
+                        }}
+                        title="Drag onto the canvas"
+                        className="cursor-grab active:cursor-grabbing"
+                      >
+                        <div className="relative aspect-[3/4] overflow-hidden bg-muted">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={look.image} alt="" className="size-full object-cover" />
+                          {look.markup ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={look.markup}
+                              alt=""
+                              aria-hidden
+                              className="pointer-events-none absolute inset-0 size-full object-cover"
+                            />
+                          ) : null}
+                          <span className="absolute left-1.5 top-1.5 bg-success px-1.5 py-0.5 font-mono text-[9px] text-background">
+                            approved
+                          </span>
+                        </div>
+                        <div className="flex items-baseline justify-between px-0.5 py-1 font-mono text-[9px] text-muted-foreground-soft">
+                          <span className="truncate">
+                            {look.brand} · look {look.lookNo}
+                          </span>
+                          <span className="shrink-0">{look.markup ? "markup" : "no markup"}</span>
+                        </div>
+                        <p className="px-0.5 pb-0.5 font-mono text-[9px] text-muted-foreground-soft">
+                          drag onto the canvas →
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           )}
 
           <p className="border-t border-border px-3 py-2 font-mono text-[9px] leading-relaxed text-muted-foreground-soft">
             {stubNote ??
-              (tab === "generations" ? "posted by the graph · gpt-image-2" : "saved by the save card")}
+              (tab === "generations"
+                ? "posted by the graph · gpt-image-2"
+                : tab === "assets"
+                  ? "saved by the save card"
+                  : "client-approved · drag one onto the canvas")}
           </p>
         </aside>
       </div>

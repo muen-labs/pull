@@ -11,7 +11,7 @@
  *
  * Static surface: decisions live in this page's state and nothing is sent.
  */
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Brush, Check, Eye, EyeOff, X } from "lucide-react"
 
 import { ShareButton } from "./ShareButton"
@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button"
 import type { Look } from "@/components/start-job/ReviewBoard"
 
 import { LookMarkupDialog } from "./LookMarkupDialog"
+import { readApproval, saveApproval, type ApprovedLook } from "@/lib/approved-store"
 
 export interface ClientBoardJob {
   /** The job, e.g. "Dune Tour". */
@@ -60,6 +61,44 @@ export function ClientBoard({ job, looks }: { job: ClientBoardJob; looks: Look[]
 
   const grouped = useMemo(() => groupByBrand(looks), [looks])
   const remaining = looks.length - approved.length - passed.length
+
+  // Reopening the link shows the decision that was sent, not a blank board.
+  useEffect(() => {
+    const record = readApproval()
+    if (!record) return
+    setApproved(record.looks.map((look) => look.id))
+    setPassed(record.passed)
+    setMarkups(
+      Object.fromEntries(
+        record.looks.filter((look) => look.markup).map((look) => [look.id, look.markup as string]),
+      ),
+    )
+    setSent(true)
+  }, [])
+
+  /** Send: stamp the record the stylist's bell, approved view and studio read. */
+  const submit = () => {
+    const approvedLooks: ApprovedLook[] = approved
+      .map((id) => looks.find((look) => look.id === id))
+      .filter((look): look is Look => Boolean(look))
+      .map((look) => ({
+        id: look.id,
+        brand: look.brand,
+        lookNo: look.lookNo,
+        season: look.season,
+        image: look.src ?? (typeof look.source === "string" ? look.source : ""),
+        ...(markups[look.id] ? { markup: markups[look.id] } : {}),
+        approvedAt: Date.now(),
+      }))
+    saveApproval({
+      job: job.title,
+      client: job.client,
+      submittedAt: Date.now(),
+      passed,
+      looks: approvedLooks,
+    })
+    setSent(true)
+  }
 
   // A pick is exclusive: approving a passed look moves it, and clicking the
   // current decision again clears it.
@@ -154,9 +193,11 @@ export function ClientBoard({ job, looks }: { job: ClientBoardJob; looks: Look[]
                 <b className="font-medium text-foreground">{remaining}</b> to review
               </span>
               {sent ? (
-                <span className="text-[12px] text-success">Sent to your stylist</span>
+                <span className="text-[12px] text-success">
+                  Sent — Juje has the approved looks and your markups
+                </span>
               ) : (
-                <Button onClick={() => setSent(true)} disabled={approved.length === 0}>
+                <Button onClick={submit} disabled={approved.length === 0}>
                   Send approvals
                 </Button>
               )}
