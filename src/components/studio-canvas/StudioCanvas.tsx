@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button"
 import { NodeCard } from "./NodeCard"
 import { imageDataUrl, streamJson } from "./image-bits"
 import { markupToBbox } from "./markup-to-bbox"
+import { carriesAsset, readDraggedAsset, setDraggedAsset } from "./asset-drag"
 import { approvedAssets, readApproval, subscribeApproval, type ApprovedLook } from "@/lib/approved-store"
 import {
   INITIAL_EDGES,
@@ -691,22 +692,22 @@ export function StudioCanvas({
           onPointerUp={onCanvasUp}
           onPointerCancel={onCanvasUp}
           onDragOver={(event) => {
-            if (!event.dataTransfer.types.includes("application/x-pull-approved")) return
+            if (!carriesAsset(event.nativeEvent)) return
             event.preventDefault()
             event.dataTransfer.dropEffect = "copy"
           }}
           onDrop={(event) => {
-            const raw = event.dataTransfer.getData("application/x-pull-approved")
-            if (!raw) return
+            if (!carriesAsset(event.nativeEvent)) return
             event.preventDefault()
             void (async () => {
               try {
-                const look = JSON.parse(raw) as ApprovedLook
+                const asset = readDraggedAsset(event.nativeEvent)
+                if (!asset) return
                 const point = toCanvas(event.clientX, event.clientY)
                 const id = `upl-${Math.random().toString(36).slice(2, 7)}`
                 // The client's pen becomes geometry the stylist owns: one red box they can
                 // clear and redraw. If the strokes cannot be read, the picture still lands.
-                const box = look.markup ? await markupToBbox(look.markup) : null
+                const box = asset.overlay ? await markupToBbox(asset.overlay) : null
                 setNodes((current) => [
                   ...current,
                   {
@@ -717,11 +718,9 @@ export function StudioCanvas({
                     x: Math.max(0, Math.round(point.x) - NODE_WIDTH / 2),
                     y: Math.max(0, Math.round(point.y) - 20),
                     status: "idle",
-                    image: look.image,
-                    ...(box ? { markup: [box] } : look.markup ? { overlay: look.markup } : {}),
-                    imageLabel: `approved · ${look.brand} ${look.lookNo}${
-                      box ? " · client box" : look.markup ? " · client markup" : ""
-                    }`,
+                    image: asset.image,
+                    ...(box ? { markup: [box] } : asset.overlay ? { overlay: asset.overlay } : {}),
+                    imageLabel: `${asset.label}${box ? " · client box" : asset.overlay ? " · client markup" : ""}`,
                   },
                 ])
                 setSelected(id)
@@ -947,6 +946,17 @@ export function StudioCanvas({
                 <ul className="divide-y divide-border">
                   {generations.map((generation) => (
                     <li key={generation.id} className="bg-card">
+                      <div
+                        draggable
+                        onDragStart={(event) =>
+                          setDraggedAsset(event.nativeEvent, {
+                            image: generation.image,
+                            label: `generation · ${generation.model}`,
+                          })
+                        }
+                        title="Drag onto the canvas or onto a reference card"
+                        className="cursor-grab active:cursor-grabbing"
+                      >
                       <div className="aspect-square overflow-hidden bg-muted">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={generation.image} alt="" className="size-full object-cover" />
@@ -958,6 +968,7 @@ export function StudioCanvas({
                         <p className="mt-1 font-mono text-[9px] text-muted-foreground-soft">
                           {generation.model} · {generation.ms > 0 ? `${(generation.ms / 1000).toFixed(0)}s` : "—"}
                         </p>
+                      </div>
                       </div>
                     </li>
                   ))}
@@ -979,13 +990,25 @@ export function StudioCanvas({
                 <ul className="grid grid-cols-2 gap-px bg-border">
                   {assets.map((src, index) => (
                     <li key={`${src.slice(-24)}-${index}`} className="bg-card">
-                      <div className="aspect-[4/5] overflow-hidden bg-muted">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={src} alt="" className="size-full object-cover" />
-                      </div>
-                      <div className="flex items-baseline justify-between px-1.5 py-1 font-mono text-[9px] text-muted-foreground-soft">
-                        <span className="truncate">look-27-v{index + 1}.png</span>
-                        <span>2×</span>
+                      <div
+                        draggable
+                        onDragStart={(event) =>
+                          setDraggedAsset(event.nativeEvent, {
+                            image: src,
+                            label: `asset · look-27-v${index + 1}`,
+                          })
+                        }
+                        title="Drag onto the canvas or onto a reference card"
+                        className="cursor-grab active:cursor-grabbing"
+                      >
+                        <div className="aspect-[4/5] overflow-hidden bg-muted">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={src} alt="" className="size-full object-cover" />
+                        </div>
+                        <div className="flex items-baseline justify-between px-1.5 py-1 font-mono text-[9px] text-muted-foreground-soft">
+                          <span className="truncate">look-27-v{index + 1}.png</span>
+                          <span>2×</span>
+                        </div>
                       </div>
                     </li>
                   ))}
@@ -1010,10 +1033,13 @@ export function StudioCanvas({
                     <li key={look.id} className="bg-card p-2">
                       <div
                         draggable
-                        onDragStart={(event) => {
-                          event.dataTransfer.setData("application/x-pull-approved", JSON.stringify(look))
-                          event.dataTransfer.effectAllowed = "copy"
-                        }}
+                        onDragStart={(event) =>
+                          setDraggedAsset(event.nativeEvent, {
+                            image: look.image,
+                            ...(look.markup ? { overlay: look.markup } : {}),
+                            label: `approved · ${look.brand} ${look.lookNo}`,
+                          })
+                        }
                         title="Drag onto the canvas"
                         className="cursor-grab active:cursor-grabbing"
                       >
@@ -1040,7 +1066,7 @@ export function StudioCanvas({
                           <span className="shrink-0">{look.markup ? "markup" : "no markup"}</span>
                         </div>
                         <p className="px-0.5 pb-0.5 font-mono text-[9px] text-muted-foreground-soft">
-                          drag onto the canvas →
+                          drag onto the canvas or a reference card →
                         </p>
                       </div>
                     </li>
@@ -1056,7 +1082,7 @@ export function StudioCanvas({
                 ? "posted by the graph · gpt-image-2"
                 : tab === "assets"
                   ? "saved by the save card"
-                  : "client-approved · drag one onto the canvas")}
+                  : "client-approved · drag one onto a reference card")}
           </p>
         </aside>
       </div>

@@ -20,6 +20,8 @@ import {
 } from "react"
 
 import { fileToDataUrl } from "./image-bits"
+import { carriesAsset, readDraggedAsset } from "./asset-drag"
+import { markupToBbox } from "./markup-to-bbox"
 
 import { Input } from "@/components/ui/input"
 import {
@@ -205,11 +207,12 @@ export function NodeCard({
   /* ── dropping a file from Finder ───────────────────────────────────────── */
   const [dropping, setDropping] = useState(false)
 
-  const acceptsFiles = (event: ReactDragEvent<HTMLElement>) =>
-    node.kind === "upload" && Array.from(event.dataTransfer.types).includes("Files")
+  const acceptsDrop = (event: ReactDragEvent<HTMLElement>) =>
+    node.kind === "upload" &&
+    (Array.from(event.dataTransfer.types).includes("Files") || carriesAsset(event.nativeEvent))
 
   const onDragOver = (event: ReactDragEvent<HTMLElement>) => {
-    if (!acceptsFiles(event)) return
+    if (!acceptsDrop(event)) return
     event.preventDefault()
     event.stopPropagation()
     event.dataTransfer.dropEffect = "copy"
@@ -224,11 +227,28 @@ export function NodeCard({
     setDropping(false)
   }
 
+  /**
+   * A reference card takes two kinds of drop: a file from Finder, or a tile dragged out of the
+   * studio panel. The panel tile can carry the client's markup, which is read back into a box so
+   * the card keeps editable geometry rather than a flat overlay.
+   */
   const onDrop = async (event: ReactDragEvent<HTMLElement>) => {
     if (node.kind !== "upload") return
     event.preventDefault()
     event.stopPropagation()
     setDropping(false)
+
+    const asset = readDraggedAsset(event.nativeEvent)
+    if (asset) {
+      const box = asset.overlay ? await markupToBbox(asset.overlay) : null
+      onChange(node.id, {
+        image: asset.image,
+        imageLabel: asset.label,
+        ...(box ? { markup: [box], overlay: undefined } : asset.overlay ? { overlay: asset.overlay } : { markup: [] }),
+      })
+      return
+    }
+
     const file = event.dataTransfer.files?.[0]
     if (!file || !file.type.startsWith("image/")) return
     try {
@@ -425,7 +445,7 @@ export function NodeCard({
 
             {dropping ? (
               <span className="pointer-events-none absolute inset-0 flex items-center justify-center border-2 border-dashed border-destructive bg-background/80 px-2 text-center font-mono text-[10px] text-destructive">
-                drop to replace
+                drop to replace this reference
               </span>
             ) : null}
           </div>
