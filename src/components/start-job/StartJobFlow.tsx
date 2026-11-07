@@ -10,7 +10,7 @@
  * (./ingest.ts). Persistence is not wired — the board is held in memory and
  * "Send to client" says so.
  */
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Sparkles } from "lucide-react"
 import { parseLook } from "@/lib/agent/parse"
 import { Button } from "@/components/ui/button"
@@ -27,8 +27,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { AgentTrace } from "@/components/AgentTrace"
+import { describeTaste, nearestToTaste } from "@/lib/taste"
+import type { AgentStep } from "@/lib/agent/trace"
 import { ingestLook } from "./ingest"
-import { ReviewBoard, type Look } from "./ReviewBoard"
+import { MIN_PER_ROW, ReviewBoard, suggestionId, type Look } from "./ReviewBoard"
 
 /** One look as the research route returns it: a Vogue Runway photograph + its look number. */
 interface ApiLook {
@@ -46,13 +49,58 @@ interface ApiDesigner {
   reserve: ApiLook[]
 }
 
-interface SuggestStep {
-  id: string
-  tool: string
-  status: string
-  durationMs?: number
-  args?: unknown
-  result?: unknown
+type SuggestStep = AgentStep
+
+/**
+ * Every run opens with the same three ids (`suggest.search`, `suggest.season`, `suggest.pick`), so a
+ * second press — "Add 5 more designers", the board's own Suggest looks — would repeat a key the trace
+ * list is already rendering. A repeated id is kept, but named as a later call: `suggest.search#2`.
+ */
+function appendStep(current: SuggestStep[], step: SuggestStep): SuggestStep[] {
+  if (!current.some((entry) => entry.id === step.id)) return [...current, step]
+  let run = 2
+  while (current.some((entry) => entry.id === `${step.id}#${run}`)) run += 1
+  return [...current, { ...step, id: `${step.id}#${run}` }]
+}
+
+const BOARD_KEY = "pull.board.v1"
+
+interface StoredBoard {
+  job: { title: string; description: string; email: string; dueDate: string }
+  looks: Look[]
+}
+
+/**
+ * A board is built in memory at `/`, so any reload — a dev refresh, a dropped socket — used to drop
+ * the stylist back on the landing page mid-run. The board is kept in sessionStorage instead: only
+ * looks whose source is a URL can come back (an uploaded file cannot), and the board is the thing
+ * that reappears, not the landing page.
+ */
+function storeBoard(board: StoredBoard) {
+  try {
+    sessionStorage.setItem(BOARD_KEY, JSON.stringify(board))
+  } catch {
+    // A full quota is not worth failing a build over.
+  }
+}
+
+function clearStoredBoard() {
+  try {
+    sessionStorage.removeItem(BOARD_KEY)
+  } catch {
+    // ignore
+  }
+}
+
+function readStoredBoard(): StoredBoard | null {
+  try {
+    const raw = sessionStorage.getItem(BOARD_KEY)
+    if (!raw) return null
+    const board = JSON.parse(raw) as StoredBoard
+    return board?.looks?.length ? board : null
+  } catch {
+    return null
+  }
 }
 
 interface SuggestLooksResponse {
@@ -75,7 +123,7 @@ function imageSource(image: string): string {
 function looksFromDesigners(designers: ApiDesigner[]): Look[] {
   return designers.flatMap((designer) =>
     designer.looks.map((look) => ({
-      id: `suggested:${designer.slug}:${look.lookNo}`,
+      id: suggestionId(designer.slug, look.lookNo),
       fileName: `${designer.slug}-look-${look.lookNo}.jpg`,
       brand: designer.brand,
       lookNo: look.lookNo,
@@ -131,6 +179,34 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
   const [note, setNote] = useState<string | null>(null)
   const [progress, setProgress] = useState<{ done: number; total: number; label: string } | null>(null)
 
+  /** One research run at a time: a double press would append the same houses twice. */
+  const researchInFlight = useRef(false)
+
+  /** The season index is the one fetch the first press used to wait on — start it when the dialog opens. */
+  const warmed = useRef(false)
+  useEffect(() => {
+    if (!open || warmed.current) return
+    warmed.current = true
+    void fetch("/api/skills/suggest-looks?warm=1")
+  }, [open])
+
+  useEffect(() => {
+    const saved = readStoredBoard()
+    if (!saved) return
+    setJobName(saved.job.title)
+    setClientName(saved.job.description)
+    setContactEmail(saved.job.email)
+    setDeliveryDate(saved.job.dueDate)
+    setLooks(
+      saved.looks.map((look) => ({
+        ...look,
+        status: "ready" as const,
+        src: typeof look.source === "string" ? look.source : look.src,
+      })),
+    )
+    setStage("board")
+  }, [])
+
   const fileInputRef = useRef<HTMLInputElement>(null)
   const folderInputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
@@ -140,6 +216,7 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
   }
 
   const reset = useCallback(() => {
+    clearStoredBoard()
     setLooks((current) => {
       releaseUrls(current)
       return []
@@ -177,20 +254,55 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
     })
   }, [])
 
-  /** The research run: client → gender → Vogue Runway season → designers × eight looks. */
-  const runResearch = useCallback(async (client: string, offset: number, limit: number) => {
-    const response = await fetch("/api/skills/suggest-looks", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ clientName: client, offset, limit }),
-    })
-    const data = (await response.json()) as SuggestLooksResponse
-    if (!response.ok) throw new Error(data.error ?? "The research run failed.")
-    return data
-  }, [])
+  /** The research run, streamed: each house is shown as it lands instead of after the slowest one. */
+  const streamResearch = useCallback(
+    async (
+      client: string,
+      offset: number,
+      limit: number,
+      on: { step?: (step: SuggestStep) => void; designer?: (designer: ApiDesigner) => void },
+    ) => {
+      const response = await fetch("/api/skills/suggest-looks", {
+        method: "POST",
+        headers: { "content-type": "application/json", accept: "application/x-ndjson" },
+        body: JSON.stringify({ clientName: client, offset, limit, stream: true }),
+      })
+      if (!response.ok || !response.body) {
+        const error = (await response.json().catch(() => ({}))) as { error?: string }
+        throw new Error(error.error ?? "The research run failed.")
+      }
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ""
+      let done: SuggestLooksResponse | null = null
+      while (true) {
+        const chunk = await reader.read()
+        if (chunk.value) buffer += decoder.decode(chunk.value, { stream: true })
+        const lines = buffer.split("\n")
+        buffer = lines.pop() ?? ""
+        for (const line of lines) {
+          if (!line.trim()) continue
+          const event = JSON.parse(line) as
+            | { type: "step"; step: SuggestStep }
+            | { type: "designer"; designer: ApiDesigner }
+            | { type: "error"; message: string }
+            | ({ type: "done" } & SuggestLooksResponse)
+          if (event.type === "step") on.step?.(event.step)
+          else if (event.type === "designer") on.designer?.(event.designer)
+          else if (event.type === "error") throw new Error(event.message)
+          else done = event
+        }
+        if (chunk.done) break
+      }
+      if (!done) throw new Error("The research run ended early.")
+      return done
+    },
+    [],
+  )
 
   const suggestLooks = useCallback(async () => {
-    if (loadingSuggestions) return
+    if (loadingSuggestions || researchInFlight.current) return
+    researchInFlight.current = true
     const client = clientName.trim()
     if (!client) {
       setNote("Add the client's name first — the research starts there.")
@@ -199,57 +311,30 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
     setLoadingSuggestions(true)
     setNote(null)
     setReserveNote(null)
+    setSuggested([])
+    setSuggestTrace([])
+    setDesignerSources([])
+    setDesignerCount(0)
+    setReserve({})
     try {
-      const data = await runResearch(client, 0, 10)
-      setSuggested(looksFromDesigners(data.designers))
+      const data = await streamResearch(client, 0, 10, {
+        step: (step) => setSuggestTrace((current) => appendStep(current, step)),
+        designer: (designer) => {
+          setSuggested((current) => [...current, ...looksFromDesigners([designer])])
+          setDesignerSources((current) => [...current, designer])
+          setDesignerCount((count) => count + 1)
+          setReserve((current) => ({ ...current, [designer.brand]: designer.reserve }))
+        },
+      })
       setSuggestMeta(data)
       setSuggestTrace(data.trace)
-      setDesignerSources(data.designers)
-      setDesignerCount(data.designers.length)
-      setReserve(Object.fromEntries(data.designers.map((designer) => [designer.brand, designer.reserve])))
     } catch (error) {
       setNote(error instanceof Error ? error.message : "Could not load suggestions.")
     } finally {
+      researchInFlight.current = false
       setLoadingSuggestions(false)
     }
-  }, [clientName, loadingSuggestions, runResearch])
-
-  /** More designers, five at a time, eight looks each. */
-  const suggestMore = useCallback(async () => {
-    if (moreLoading || !suggestMeta?.hasMore) return
-    const client = clientName.trim()
-    if (!client) return
-    setMoreLoading(true)
-    setNote(null)
-    try {
-      const data = await runResearch(client, designerCount, 5)
-      setSuggested((current) => [...current, ...looksFromDesigners(data.designers)])
-      setSuggestTrace((current) => [...current, ...data.trace])
-      setDesignerSources((current) => [...current, ...data.designers])
-      setDesignerCount((count) => count + data.designers.length)
-      setSuggestMeta((current) =>
-        current
-          ? { ...current, hasMore: data.hasMore, nextOffset: data.nextOffset, totalDesigners: data.totalDesigners }
-          : data,
-      )
-      setReserve((current) => {
-        const next = { ...current }
-        for (const designer of data.designers) {
-          next[designer.brand] = [...(next[designer.brand] ?? []), ...designer.reserve]
-        }
-        return next
-      })
-    } catch (error) {
-      setNote(error instanceof Error ? error.message : "Could not load more designers.")
-    } finally {
-      setMoreLoading(false)
-    }
-  }, [clientName, designerCount, moreLoading, runResearch, suggestMeta?.hasMore])
-
-  const pool = useMemo(() => [...looks, ...suggested], [looks, suggested])
-
-  const canBuild =
-    Boolean(jobName.trim()) && Boolean(clientName.trim()) && Boolean(contactEmail.trim()) && pool.length > 0
+  }, [clientName, loadingSuggestions, streamResearch])
 
   /** Work the queue: one look at a time, on screen, with its real durations. */
   const processQueue = useCallback(async (queue: Look[]) => {
@@ -283,41 +368,123 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
 
   /**
    * Removing a suggested look refills its row from the same collection. The route sends six spare
-   * looks per designer, so the board keeps eight looks per house instead of thinning out on stage.
+   * looks per designer, so the board keeps five looks per house instead of thinning out on stage.
+   */
+  /** More designers, five at a time, five looks each — a house is one row. */
+  const suggestMore = useCallback(async () => {
+    if (moreLoading || !suggestMeta?.hasMore || researchInFlight.current) return
+    researchInFlight.current = true
+    const client = clientName.trim()
+    if (!client) return
+    setMoreLoading(true)
+    setNote(null)
+    const added: Look[] = []
+    try {
+      const data = await streamResearch(client, designerCount, 5, {
+        step: (step) => setSuggestTrace((current) => appendStep(current, step)),
+        designer: (designer) => {
+          const fresh = looksFromDesigners([designer])
+          added.push(...fresh)
+          setSuggested((current) => [...current, ...fresh])
+          setDesignerSources((current) => [...current, designer])
+          setDesignerCount((count) => count + 1)
+          setReserve((current) => ({
+            ...current,
+            [designer.brand]: [...(current[designer.brand] ?? []), ...designer.reserve],
+          }))
+        },
+      })
+      setSuggestMeta((current) =>
+        current
+          ? { ...current, hasMore: data.hasMore, nextOffset: data.nextOffset, totalDesigners: data.totalDesigners }
+          : data,
+      )
+      // New houses arrive ready to work: crop and read them while the board is already on screen.
+      void processQueue(added)
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : "Could not load more designers.")
+    } finally {
+      researchInFlight.current = false
+      setMoreLoading(false)
+    }
+  }, [clientName, designerCount, moreLoading, processQueue, streamResearch, suggestMeta?.hasMore])
+
+  const pool = useMemo(() => [...looks, ...suggested], [looks, suggested])
+
+  const canBuild =
+    Boolean(jobName.trim()) && Boolean(clientName.trim()) && Boolean(contactEmail.trim()) && pool.length > 0
+
+  /**
+   * Taste picks the replacement here too: the row the look left behind is the brief, and the spare
+   * nearest to it in the same collection is what comes back — not simply the next spare.
    */
   const refillSuggestion = useCallback(
-    (removed: Look) => {
+    (removed: Look, row: Look[]) => {
       if (!removed.suggested) return
-      const spare = reserve[removed.brand]?.[0]
-      if (!spare) {
+      const candidates = reserve[removed.brand] ?? []
+      if (!candidates.length) {
         setReserveNote(`No more ${removed.brand} looks left in this collection.`)
         return
       }
-      setReserve((current) => ({ ...current, [removed.brand]: (current[removed.brand] ?? []).slice(1) }))
-      const replacement: Look = {
-        id: `suggested:${removed.brand}:${spare.lookNo}:${Date.now()}`,
-        fileName: `${removed.brand}-look-${spare.lookNo}.jpg`,
-        brand: removed.brand,
-        lookNo: spare.lookNo,
-        season: removed.season,
-        suggested: true,
-        known: { brand: removed.brand, lookNo: spare.lookNo, season: removed.season },
-        source: imageSource(spare.image),
-        status: "queued",
-      }
-      setSuggested((current) => [...current, replacement])
-      setReserveNote(null)
-      void processQueue([replacement])
+      void (async () => {
+        const kept = row.flatMap((look) => (look.src ? [{ id: look.id, src: look.src }] : []))
+        const index = await nearestToTaste(
+          kept,
+          candidates.map((spare) => ({
+            id: `${removed.brand}:${spare.lookNo}`,
+            src: imageSource(spare.image),
+          })),
+        )
+        const spare = candidates[index] ?? candidates[0]
+        setReserve((current) => ({
+          ...current,
+          [removed.brand]: (current[removed.brand] ?? []).filter((_, slot) => slot !== index),
+        }))
+        const replacement: Look = {
+          id: suggestionId(removed.brand, spare.lookNo),
+          fileName: `${removed.brand}-look-${spare.lookNo}.jpg`,
+          brand: removed.brand,
+          lookNo: spare.lookNo,
+          season: removed.season,
+          suggested: true,
+          known: { brand: removed.brand, lookNo: spare.lookNo, season: removed.season },
+          source: imageSource(spare.image),
+          status: "queued",
+        }
+        setSuggested((current) => [...current, replacement])
+        void processQueue([replacement])
+        setReserveNote(null)
+        if (spare) {
+          void describeTaste(kept, {
+            id: `${removed.brand}:${spare.lookNo}`,
+            src: imageSource(spare.image),
+          }).then((why) => setReserveNote(`Taste · look ${spare.lookNo} — ${why}`))
+        }
+      })()
     },
     [reserve, processQueue],
   )
 
+  const canRemoveLook = useCallback(
+    (look: Look, rowCount: number) => {
+      if (rowCount > MIN_PER_ROW) return true
+      return (reserve[look.brand]?.length ?? 0) > 0
+    },
+    [reserve],
+  )
+
   const buildBoard = useCallback(() => {
     if (!canBuild) return
+    storeBoard({
+      job: { title: jobName, description: clientName, email: contactEmail, dueDate: deliveryDate },
+      looks: pool
+        .filter((look) => typeof look.source === "string")
+        .map((look) => ({ ...look, status: "ready" as const })),
+    })
     setStage("board")
     setOpen(false)
     void processQueue(pool)
-  }, [canBuild, pool, processQueue])
+  }, [canBuild, contactEmail, clientName, deliveryDate, jobName, pool, processQueue])
 
   const trigger =
     kind === "nav" ? (
@@ -574,6 +741,17 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
               </Button>
             </div>
           </div>
+
+          {/* The run is visible while it happens: every call the research makes, in order. */}
+          {suggestTrace.length ? (
+            <div className="max-h-[260px] overflow-y-auto">
+              <AgentTrace
+                steps={suggestTrace}
+                title={loadingSuggestions ? "Researching the client" : "Research run"}
+                compact
+              />
+            </div>
+          ) : null}
         </DialogContent>
       </Dialog>
 
@@ -583,7 +761,12 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
           job={{ title: jobName, description: clientName, email: contactEmail, dueDate: deliveryDate }}
           progress={progress}
           onRemoveLook={refillSuggestion}
+          canRemove={canRemoveLook}
+          onSuggest={suggestMeta?.hasMore ? () => void suggestMore() : undefined}
+          suggesting={moreLoading}
+          suggestError={note}
           onBack={() => {
+            clearStoredBoard()
             setStage("details")
             setOpen(true)
           }}
