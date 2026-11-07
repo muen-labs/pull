@@ -45,6 +45,7 @@ export default function RequestsPage() {
         shipTo: "Pull Studio · 12 Mercer St, New York, NY 10013",
       }}
       brands={brands}
+      seeded
     />
   )
 }

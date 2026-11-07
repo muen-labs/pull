@@ -18,6 +18,7 @@ import type { PointerEvent } from "react"
 import { Button } from "@/components/ui/button"
 import { NodeCard } from "./NodeCard"
 import { imageDataUrl, streamJson } from "./image-bits"
+import { markupToBbox } from "./markup-to-bbox"
 import { approvedAssets, readApproval, subscribeApproval, type ApprovedLook } from "@/lib/approved-store"
 import {
   INITIAL_EDGES,
@@ -698,31 +699,36 @@ export function StudioCanvas({
             const raw = event.dataTransfer.getData("application/x-pull-approved")
             if (!raw) return
             event.preventDefault()
-            try {
-              const look = JSON.parse(raw) as ApprovedLook
-              const point = toCanvas(event.clientX, event.clientY)
-              const id = `upl-${Math.random().toString(36).slice(2, 7)}`
-              // The select becomes a reference card, with the client's markup as its overlay:
-              // the stylist wires it into the compose card and the reading pass sees the pen.
-              setNodes((current) => [
-                ...current,
-                {
-                  id,
-                  kind: "upload",
-                  step: nextStep(),
-                  // Keep the card on the canvas: a drop near an edge should not park it off-canvas.
-                  x: Math.max(0, Math.round(point.x) - NODE_WIDTH / 2),
-                  y: Math.max(0, Math.round(point.y) - 20),
-                  status: "idle",
-                  image: look.image,
-                  ...(look.markup ? { overlay: look.markup } : {}),
-                  imageLabel: `approved · ${look.brand} ${look.lookNo}`,
-                },
-              ])
-              setSelected(id)
-            } catch {
-              // A payload we cannot read is not worth an error on stage.
-            }
+            void (async () => {
+              try {
+                const look = JSON.parse(raw) as ApprovedLook
+                const point = toCanvas(event.clientX, event.clientY)
+                const id = `upl-${Math.random().toString(36).slice(2, 7)}`
+                // The client's pen becomes geometry the stylist owns: one red box they can
+                // clear and redraw. If the strokes cannot be read, the picture still lands.
+                const box = look.markup ? await markupToBbox(look.markup) : null
+                setNodes((current) => [
+                  ...current,
+                  {
+                    id,
+                    kind: "upload",
+                    step: nextStep(),
+                    // Keep the card on the canvas: a drop near an edge should not park it off-canvas.
+                    x: Math.max(0, Math.round(point.x) - NODE_WIDTH / 2),
+                    y: Math.max(0, Math.round(point.y) - 20),
+                    status: "idle",
+                    image: look.image,
+                    ...(box ? { markup: [box] } : look.markup ? { overlay: look.markup } : {}),
+                    imageLabel: `approved · ${look.brand} ${look.lookNo}${
+                      box ? " · client box" : look.markup ? " · client markup" : ""
+                    }`,
+                  },
+                ])
+                setSelected(id)
+              } catch {
+                // A payload we cannot read is not worth an error on stage.
+              }
+            })()
           }}
           className="absolute inset-y-0 left-0 cursor-grab touch-none select-none bg-background transition-[right] duration-500 ease-out active:cursor-grabbing"
           style={{

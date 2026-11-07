@@ -107,8 +107,32 @@ function polished(body: string): string {
 
 const STATUS_LABEL: Record<Status, string> = { draft: "Draft", queued: "Approved", sent: "Sent" }
 
-export function RequestEmails({ job, brands }: { job: RequestJob; brands: RequestBrand[] }) {
-  const [drafts, setDrafts] = useState<Record<string, Draft>>({})
+export function RequestEmails({
+  job,
+  brands,
+  seeded = false,
+}: {
+  job: RequestJob
+  brands: RequestBrand[]
+  /**
+   * The static surface opens on the state the demo needs to show — every house drafted, the first
+   * one approved — so Act 3 reads as a working screen instead of an empty one. The live studio
+   * route never seeds: a draft exists because an agent run created it.
+   */
+  seeded?: boolean
+}) {
+  const [drafts, setDrafts] = useState<Record<string, Draft>>(() => {
+    if (!seeded) return {}
+    const initial: Record<string, Draft> = {}
+    for (const [index, brand] of brands.entries()) {
+      initial[brand.brand] = {
+        ...draftFor(brand, job),
+        status: index === 0 ? "queued" : "draft",
+        polished: index === 0,
+      }
+    }
+    return initial
+  })
   const [run, setRun] = useState<{ steps: AgentStep[]; brands: (string | null)[] } | null>(null)
   const [running, setRunning] = useState(false)
   const [polishing, setPolishing] = useState<string | null>(null)
