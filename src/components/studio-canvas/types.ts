@@ -35,6 +35,8 @@ export interface CanvasNode {
   /** upload — the reference image, its role, and the stylist's borders. */
   image?: string
   imageLabel?: string
+  /** A transparent PNG layer over the picture — the client's own markup, from /approved. */
+  overlay?: string
   markup?: MarkupRect[]
   /** compose — the prompt the assistant wrote (editable), and the render. */
   prompt?: string

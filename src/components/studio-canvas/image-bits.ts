@@ -8,9 +8,9 @@ import type { MarkupRect } from "./types"
  */
 export async function imageDataUrl(
   src: string,
-  options: { maxSize?: number; markup?: MarkupRect[] } = {},
+  options: { maxSize?: number; markup?: MarkupRect[]; overlay?: string } = {},
 ): Promise<string> {
-  const { maxSize = 1024, markup = [] } = options
+  const { maxSize = 1024, markup = [], overlay } = options
   const image = await load(src)
   const scale = Math.min(1, maxSize / Math.max(image.naturalWidth, image.naturalHeight))
   const width = Math.max(1, Math.round(image.naturalWidth * scale))
@@ -22,6 +22,16 @@ export async function imageDataUrl(
   const context = canvas.getContext("2d")
   if (!context) throw new Error("this browser cannot read images onto a canvas")
   context.drawImage(image, 0, 0, width, height)
+
+  if (overlay) {
+    // The client's markup is already a picture; draw it over the copy at the same scale.
+    try {
+      const layer = await load(overlay)
+      context.drawImage(layer, 0, 0, width, height)
+    } catch {
+      // A markup layer that cannot decode must not stop the read.
+    }
+  }
 
   if (markup.length > 0) {
     context.strokeStyle = "#465907"
