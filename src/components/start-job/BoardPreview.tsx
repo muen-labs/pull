@@ -13,6 +13,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from "react"
 
+import { readStoredBoard } from "@/lib/board-store"
 import { centreOf, describeTaste, pickCached, rankByTaste, warmTaste } from "@/lib/taste"
 import { MIN_PER_ROW, ReviewBoard, suggestionId, type BoardJob, type Look } from "./ReviewBoard"
 import { BoardSwitcher, type BoardOption } from "./BoardSwitcher"
@@ -59,12 +60,34 @@ export interface PreviewBoard {
 }
 
 export function BoardPreview({ boards }: { boards: PreviewBoard[] }) {
+  const [allBoards, setAllBoards] = useState<PreviewBoard[]>(boards)
   const [activeId, setActiveId] = useState(boards[0]?.id ?? "")
-  const active = boards.find((board) => board.id === activeId) ?? boards[0]
+
+  // The start-job dialog builds a board at `/` and hands off here. It arrives through
+  // sessionStorage (a board is this session's working state, not a saved job), so `?job=`
+  // URLs stay shareable and the seeded boards stay the design surface.
+  useEffect(() => {
+    const saved = readStoredBoard()
+    if (!saved) return
+    // A stored look may only carry `source` (the ingested/original URL); the board renders `src`,
+    // so restore the display source rather than leaving every tile waiting on a crop.
+    const looks = saved.looks.map((look) => ({
+      ...look,
+      status: "ready" as const,
+      src: look.src ?? (typeof look.source === "string" ? look.source : undefined),
+    }))
+    const built: PreviewBoard = { id: "built", job: saved.job, looks }
+    setAllBoards([built, ...boards.filter((board) => board.id !== "built")])
+    setActiveId("built")
+    // Read once on mount: `boards` is the server-rendered seed set.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const active = allBoards.find((board) => board.id === activeId) ?? allBoards[0]
 
   if (!active) return null
 
-  const options: BoardOption[] = boards.map((board) => ({
+  const options: BoardOption[] = allBoards.map((board) => ({
     id: board.id,
     title: board.job.title,
     client: board.job.description,
