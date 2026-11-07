@@ -12,7 +12,7 @@
  * wired to a provider. The node vocabulary is the real one from PRODUCT.md Phase 4.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { X } from "lucide-react"
+import { Loader2Icon, X } from "lucide-react"
 import type { PointerEvent } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -622,8 +622,21 @@ export function StudioCanvas({
             Agent run · {done ? `${completed}/${nodes.length}` : `0/${nodes.length}`}
           </span>
 
-          <Button size="sm" className="agent-action" onClick={run} disabled={running}>
-            {running ? "Running…" : "Run"}
+          <Button
+            size="sm"
+            className="agent-action"
+            onClick={run}
+            disabled={running}
+            aria-busy={running}
+          >
+            {running ? (
+              <>
+                <Loader2Icon aria-hidden className="animate-spin motion-reduce:animate-none" />
+                Running…
+              </>
+            ) : (
+              "Run"
+            )}
           </Button>
         </div>
       </section>
