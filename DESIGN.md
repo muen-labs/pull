@@ -433,7 +433,26 @@ Approval is a hand-off, and the point of it is that neither side has to describe
   it marks it seen, so the badge clears the way the DB bell's badge clears.
 - **`/approved` is the client's board, not a summary.** Same order, same tiles, same markups over the
   same photographs — a stylist reads the actual pen, and can say what the client meant without asking.
+- **The pen becomes geometry in the studio** (2026-11-07). A dropped select arrives with the
+  client's markup read back off the PNG: the red strokes are reduced to their bounding box (the piece
+  the client pointed at) and shown as the card's own red box, so the stylist can `clear` it and
+  redraw with `mark` — the client's intent is a starting point, not a lock. If the strokes cannot be
+  read, the markup image rides along unchanged; the picture is never lost.
 - **The studio inherits them.** The assets panel gains a third tab, **Approved**, with the selects and
   their markups. A select is **draggable onto the canvas**: it drops as a reference card whose overlay is
   the client's markup, so the reading pass gets that pen baked into its copy while the render still gets
   the clean photograph. The stylist wires it into the compose card exactly like a fixture.
+
+---
+
+## 13. Intake comes last, and it opens working (2026-11-07)
+
+- **The guide runs board → approval → studio → intake.** The studio is the argument the demo is
+  making, so it sits third; intake closes the story as step four. The `actFor` mapping moves with the
+  order (`/canvas` is step 3, `/requests` and `/i/*` are step 4).
+- **The static intake surface opens seeded.** Three houses drafted with their approved looks — the
+  first already approved, the rest in draft — because an empty "No drafts yet" is the wrong first
+  impression for the screen that closes the demo. The live studio route never seeds: a draft exists
+  because an agent run produced it.
+- **The label/rates half is deliberately still a build item**, not a polish one: the Shippo panel on
+  this surface is what intake means in full, and it is out of scope until the rates story is rebuilt.
