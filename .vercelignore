@@ -1,0 +1,15 @@
+# A CLI deploy uploads the working folder, not the git tree — so anything local and heavy
+# or secret must be named here or it lands in a deployment snapshot.
+#
+# The env backups carry real keys (DATABASE_URL, AUTH_SECRET, PRISMTRACE_*).
+.env.local.bak-*
+.env*.bak-*
+.env.local
+.env
+# Filming and render scratch: hundreds of MB that the app never serves.
+tmp/
+docs/submission/
+# Playwright output.
+e2e/artifacts/
+playwright-report/
+test-results/
