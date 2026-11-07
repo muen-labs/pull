@@ -28,6 +28,13 @@ const AGENT_NAME = "pull-canvas-agent"
 /** Reading model: vision-capable and the cheapest row that is. */
 const ASSIST_MODEL = "litellm/gemini-3.8-flash"
 
+/**
+ * The route's maxDuration is 300s; this budget keeps the whole compose inside it. A function
+ * killed at the ceiling closes the stream with no result line at all — "the run ended without
+ * a result" is the worst failure shape for a demo, so the code finishes before it can happen.
+ */
+const BUDGET_MS = 280_000
+
 export interface LookRef {
   name: string
   /** `data:image/…;base64,…` — the clean copy, used for the render. */
@@ -208,7 +215,10 @@ export async function composeLook(
   onPhase?: (phase: string) => void,
 ): Promise<LookResult> {
   const started = Date.now()
+  /** What is left of the ceiling, minus room to answer with. */
+  const remaining = () => Math.max(5_000, BUDGET_MS - (Date.now() - started))
   const say = (phase: string) => {
+    console.log(`canvas ${Math.round((Date.now() - started) / 1000)}s · ${phase}`)
     try {
       onPhase?.(phase)
     } catch {
@@ -264,12 +274,15 @@ export async function composeLook(
       say("reading the pictures")
       let lastError: unknown = null
       for (let attempt = 0; attempt < 2 && read.length < 20; attempt += 1) {
+        // One attempt gets at most 90s, and a retry only happens with room for the render.
+        if (attempt > 0 && remaining() < 170_000) break
+        const readBudget = Math.min(90_000, Math.max(20_000, remaining() - 150_000))
         try {
           const session = await c.createSession(agentId, {
             initial_events: [{ type: "user.message", content }],
             metadata: { app: "pull-canvas", step: "read" },
           })
-          const turn = await readTurn(c, agentId, session.session_id, 240_000)
+          const turn = await readTurn(c, agentId, session.session_id, readBudget)
           const written = cleanPrompt(turn.text)
           if (turn.outcome === "succeeded" && written.length >= 20) read = written
           else lastError = new Error(`read turn ${turn.outcome ?? "ended early"} (${written.length} chars)`)
@@ -297,6 +310,7 @@ export async function composeLook(
     promptSource = "template"
   }
 
+  if (remaining() < 45_000) throw new Error("the run ran out of time before the render — try again")
   say("rendering the look · gpt-image-2")
   // One image_generate edit: the clean references, the prompt, a published Artifact.
   const content = [
@@ -316,7 +330,7 @@ export async function composeLook(
     initial_events: [{ type: "user.message", content }],
     metadata: { app: "pull-canvas", step: "render" },
   })
-  const turn = await readTurn(c, agentId, session.session_id, 300_000)
+  const turn = await readTurn(c, agentId, session.session_id, Math.max(20_000, remaining() - 15_000))
 
   say("saving the render")
   const page = await c.listArtifacts(agentId, { sessionId: session.session_id, page: 1, limit: 20 })
