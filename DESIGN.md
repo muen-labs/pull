@@ -384,6 +384,11 @@ The studio's six-card graph is the demo's picture of the product: **four referen
   fixtures). The footer's time before a run is the estimate; after it, the measured value.
 - **Saving is the only way into the assets.** The save card writes the render into the panel and the
   panel opens itself; nothing else populates it.
+- **The panel has two views, and the run history is the default** (2026-11-07). **Generations** lists
+  every look this session rendered, newest first, with the prompt that made it and the model/time —
+  the honest record of what was asked for. **Assets** is what the save card wrote into the job. They
+  share one panel because they answer the same question at two altitudes: what did I make, and what did
+  I keep. A failed run never clears the history, and the panel opens on Generations.
 - **A card moves by its whole surface** (2026-11-07). Pointer-down anywhere that is not a control
   starts the drag, so the title bar is no longer the only handle; buttons, fields, sockets and the
   resize grip keep their own gestures, and the image body drags the card when `mark` is off (when it
