@@ -7,9 +7,9 @@
  * surface, not the studio. `key` on the board resets its shortlist and removals
  * when you move to another job, so the two boards never bleed into each other.
  *
- * A deleted look is replaced from the reserve the server hands each board, so a
- * house keeps its five looks instead of thinning out. Once the reserve is spent
- * the five are a floor: the remove control is held rather than allowed below it.
+ * A deleted look is swapped for one the house still holds in reserve, so a row keeps
+ * its five looks instead of thinning out. The swap is a convenience, not a gate: when
+ * there is nothing spare the deletion stands and the row gets shorter.
  */
 import { useEffect, useMemo, useRef, useState } from "react"
 
@@ -59,6 +59,18 @@ export interface PreviewBoard {
   reserve?: Record<string, Look[]>
 }
 
+/**
+ * A stored look may carry only `source` (the ingested/original URL) — the board renders `src` — so
+ * restore the display source rather than leaving every tile waiting on a crop that already happened.
+ */
+function restoreStoredLook(look: Look): Look {
+  return {
+    ...look,
+    status: "ready" as const,
+    src: look.src ?? (typeof look.source === "string" ? look.source : undefined),
+  }
+}
+
 export function BoardPreview({ boards }: { boards: PreviewBoard[] }) {
   const [allBoards, setAllBoards] = useState<PreviewBoard[]>(boards)
   const [activeId, setActiveId] = useState(boards[0]?.id ?? "")
@@ -69,14 +81,15 @@ export function BoardPreview({ boards }: { boards: PreviewBoard[] }) {
   useEffect(() => {
     const saved = readStoredBoard()
     if (!saved) return
-    // A stored look may only carry `source` (the ingested/original URL); the board renders `src`,
-    // so restore the display source rather than leaving every tile waiting on a crop.
-    const looks = saved.looks.map((look) => ({
-      ...look,
-      status: "ready" as const,
-      src: look.src ?? (typeof look.source === "string" ? look.source : undefined),
-    }))
-    const built: PreviewBoard = { id: "built", job: saved.job, looks }
+    const looks = saved.looks.map(restoreStoredLook)
+    // The spares each house still holds travel with the board: without them a removal had nothing
+    // to swap in, so every remove control on a built board read "no more looks" and stayed disabled.
+    const reserve = saved.reserve
+      ? Object.fromEntries(
+          Object.entries(saved.reserve).map(([brand, list]) => [brand, list.map(restoreStoredLook)]),
+        )
+      : undefined
+    const built: PreviewBoard = { id: "built", job: saved.job, looks, reserve }
     setAllBoards([built, ...boards.filter((board) => board.id !== "built")])
     setActiveId("built")
     // Read once on mount: `boards` is the server-rendered seed set.
@@ -169,12 +182,6 @@ function BoardSurface({
         .filter((src): src is string => Boolean(src)),
     ])
   }, [looks, reserve])
-
-  /** A house keeps five: below that, a removal is only offered when a replacement exists. */
-  const canRemove = (look: Look, rowCount: number) => {
-    if (rowCount > MIN_PER_ROW) return true
-    return available(look.brand).length > 0
-  }
 
   /**
    * More houses from the same season, pulled while the stylist is already selecting. A house the
@@ -272,7 +279,6 @@ function BoardSurface({
       looks={looks}
       job={board.job}
       onRemoveLook={refill}
-      canRemove={canRemove}
       onSuggest={() => void suggestMore()}
       suggesting={suggesting}
       suggestError={suggestError}

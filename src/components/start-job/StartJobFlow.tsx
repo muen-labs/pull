@@ -97,6 +97,30 @@ function looksFromDesigners(designers: ApiDesigner[]): Look[] {
   )
 }
 
+/**
+ * The spares each house still holds from its collection, keyed by brand. They travel with the board
+ * so `/board` can refill a row when a look is removed — the same swap the seeded boards offer.
+ */
+function reservesFromDesigners(designers: ApiDesigner[]): Record<string, Look[]> {
+  const reserve: Record<string, Look[]> = {}
+  for (const designer of designers) {
+    if (!designer.reserve.length) continue
+    reserve[designer.brand] = designer.reserve.map((look) => ({
+      id: suggestionId(designer.slug, look.lookNo),
+      fileName: `${designer.slug}-look-${look.lookNo}.jpg`,
+      brand: designer.brand,
+      lookNo: look.lookNo,
+      season: designer.season,
+      suggested: true,
+      known: { brand: designer.brand, lookNo: look.lookNo, season: designer.season },
+      source: imageSource(look.image),
+      status: "ready" as const,
+      src: imageSource(look.image),
+    }))
+  }
+  return reserve
+}
+
 function looksFromFiles(files: File[]): Look[] {
   return files
     .filter((file) => /\.(jpe?g|png|webp)$/i.test(file.name) || file.type.startsWith("image/"))
@@ -365,7 +389,18 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
       job: { title: jobName, description: clientName, email: contactEmail, dueDate: deliveryDate },
       looks: pool
         .filter((look) => typeof look.source === "string")
-        .map((look) => ({ ...look, status: "ready" as const })),
+        .map((look) => ({
+          ...look,
+          status: "ready" as const,
+          // Only a URL-backed picture goes into storage. A cropped look is a base64 data URL of a
+          // 900×1200 JPEG — a few hundred KB each, so fifty of them overflow sessionStorage, and a
+          // write that fails there fails silently: the presenter then lands on the seeded board.
+          // The original source URL renders the same tile, so keep it and drop the data URL.
+          src: typeof look.src === "string" && !look.src.startsWith("data:") ? look.src : undefined,
+        })),
+      // Each house's remaining looks go with the board: `/board` swaps a removed look for one of
+      // these, so the row keeps its five instead of the remove control finding nothing to offer.
+      reserve: reservesFromDesigners(designerSources),
     })
     setOpen(false)
     // The board is a page: hand off to /board so the header and demo guide (and the next act)

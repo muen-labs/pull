@@ -18,13 +18,22 @@ export const BOARD_KEY = "pull.board.v1"
 export interface StoredBoard {
   job: { title: string; description: string; email: string; dueDate: string }
   looks: Look[]
+  /**
+   * The spares each house still holds from its collection, keyed by brand. Carried with the board
+   * so `/board` can swap a deleted look for another from the same house instead of leaving the row
+   * short — the dialog collects these, and without them every remove control read "no more looks"
+   * and stayed disabled.
+   */
+  reserve?: Record<string, Look[]>
 }
 
 export function storeBoard(board: StoredBoard) {
   try {
     sessionStorage.setItem(BOARD_KEY, JSON.stringify(board))
-  } catch {
-    // A full quota is not worth failing a build over.
+  } catch (error) {
+    // A full quota is not worth failing a build over — but silence here sends the presenter to the
+    // seeded board with no clue why, so leave one line in the console for whoever has to debug it.
+    console.warn(`pull: the built board did not fit sessionStorage (${BOARD_KEY})`, error)
   }
 }
 
