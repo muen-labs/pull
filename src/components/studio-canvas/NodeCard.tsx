@@ -376,15 +376,17 @@ export function NodeCard({
             onPointerMove={onMarkMove}
             onPointerUp={onMarkUp}
             onPointerCancel={onMarkUp}
-            className={`relative aspect-square w-full touch-none overflow-hidden rounded-md border border-border bg-muted ${
+            className={`relative w-full touch-none overflow-hidden rounded-md border border-border bg-muted ${
               marking ? "cursor-crosshair" : ""
             }`}
           >
             {node.image ? (
+              // The whole picture, never a crop: a reference is the outfit, and a cropped
+              // thumbnail hides the very thing the stylist is drawing a border around.
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={node.image} alt="" draggable={false} className="size-full object-cover object-top" />
+              <img src={node.image} alt="" draggable={false} className="block h-auto w-full" />
             ) : (
-              <div className="flex size-full items-center justify-center text-[11px] text-muted-foreground-soft">
+              <div className="flex aspect-square w-full items-center justify-center text-[11px] text-muted-foreground-soft">
                 drop an image
               </div>
             )}

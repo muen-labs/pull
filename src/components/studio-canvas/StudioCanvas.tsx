@@ -114,7 +114,7 @@ export function StudioCanvas({
     const minX = Math.min(...nodes.map((node) => node.x)) - 64
     const minY = Math.min(...nodes.map((node) => node.y)) - 64
     const maxX = Math.max(...nodes.map((node) => node.x + (node.width ?? NODE_WIDTH))) + 64
-    const maxY = Math.max(...nodes.map((node) => node.y)) + 360
+    const maxY = Math.max(...nodes.map((node) => node.y + (heights[node.id] ?? 360))) + 64
     const raw = Math.min(rect.width / (maxX - minX), rect.height / (maxY - minY), 1)
     // Never shrink the cards into illegibility; on a narrow frame the graph pans instead.
     const next = Math.min(Math.max(raw, 0.45), 1)
@@ -124,7 +124,7 @@ export function StudioCanvas({
       x: contentWidth > rect.width ? 24 - minX * next : (rect.width - contentWidth) / 2 - minX * next,
       y: (rect.height - (maxY - minY) * next) / 2 - minY * next,
     })
-  }, [nodes])
+  }, [nodes, heights])
 
   // Frame the graph once, after the canvas has been measured.
   const fitRef = useRef(fit)
