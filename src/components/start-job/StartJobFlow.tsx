@@ -11,6 +11,7 @@
  * "Send to client" says so.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Sparkles } from "lucide-react"
 import { parseLook } from "@/lib/agent/parse"
 import { Button } from "@/components/ui/button"
@@ -28,10 +29,10 @@ import {
 } from "@/components/ui/dialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { AgentTrace } from "@/components/AgentTrace"
-import { describeTaste, pickCached, warmTaste } from "@/lib/taste"
+import { clearStoredBoard, readStoredBoard, storeBoard, type StoredBoard } from "@/lib/board-store"
 import type { AgentStep } from "@/lib/agent/trace"
 import { ingestLook } from "./ingest"
-import { MIN_PER_ROW, ReviewBoard, suggestionId, type Look } from "./ReviewBoard"
+import { suggestionId, type Look } from "./ReviewBoard"
 
 /** One look as the research route returns it: a Vogue Runway photograph + its look number. */
 interface ApiLook {
@@ -61,46 +62,6 @@ function appendStep(current: SuggestStep[], step: SuggestStep): SuggestStep[] {
   let run = 2
   while (current.some((entry) => entry.id === `${step.id}#${run}`)) run += 1
   return [...current, { ...step, id: `${step.id}#${run}` }]
-}
-
-const BOARD_KEY = "pull.board.v1"
-
-interface StoredBoard {
-  job: { title: string; description: string; email: string; dueDate: string }
-  looks: Look[]
-}
-
-/**
- * A board is built in memory at `/`, so any reload — a dev refresh, a dropped socket — used to drop
- * the stylist back on the landing page mid-run. The board is kept in sessionStorage instead: only
- * looks whose source is a URL can come back (an uploaded file cannot), and the board is the thing
- * that reappears, not the landing page.
- */
-function storeBoard(board: StoredBoard) {
-  try {
-    sessionStorage.setItem(BOARD_KEY, JSON.stringify(board))
-  } catch {
-    // A full quota is not worth failing a build over.
-  }
-}
-
-function clearStoredBoard() {
-  try {
-    sessionStorage.removeItem(BOARD_KEY)
-  } catch {
-    // ignore
-  }
-}
-
-function readStoredBoard(): StoredBoard | null {
-  try {
-    const raw = sessionStorage.getItem(BOARD_KEY)
-    if (!raw) return null
-    const board = JSON.parse(raw) as StoredBoard
-    return board?.looks?.length ? board : null
-  } catch {
-    return null
-  }
 }
 
 interface SuggestLooksResponse {
@@ -158,7 +119,7 @@ function looksFromFiles(files: File[]): Look[] {
 
 export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
   const [open, setOpen] = useState(false)
-  const [stage, setStage] = useState<"details" | "board">("details")
+  const router = useRouter()
 
   const [jobName, setJobName] = useState("")
   const [clientName, setClientName] = useState("")
@@ -190,22 +151,7 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
     void fetch("/api/skills/suggest-looks?warm=1")
   }, [open])
 
-  useEffect(() => {
-    const saved = readStoredBoard()
-    if (!saved) return
-    setJobName(saved.job.title)
-    setClientName(saved.job.description)
-    setContactEmail(saved.job.email)
-    setDeliveryDate(saved.job.dueDate)
-    setLooks(
-      saved.looks.map((look) => ({
-        ...look,
-        status: "ready" as const,
-        src: typeof look.source === "string" ? look.source : look.src,
-      })),
-    )
-    setStage("board")
-  }, [])
+  // The built board lives on /board; nothing here restores the inline stage any more.
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const folderInputRef = useRef<HTMLInputElement>(null)
@@ -225,7 +171,6 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
       releaseUrls(current)
       return []
     })
-    setStage("details")
     setJobName("")
     setClientName("")
     setContactEmail("")
@@ -414,80 +359,6 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
   const canBuild =
     Boolean(jobName.trim()) && Boolean(clientName.trim()) && Boolean(contactEmail.trim()) && pool.length > 0
 
-  /**
-   * Taste picks the replacement here too, and the row is filled in the same tick as the delete: the
-   * queued tile is the fifth look immediately, and the crop/read happens behind it. A cached pick
-   * is the taste choice; a cold cache still takes the next spare rather than leaving a gap.
-   */
-  const refillSuggestion = useCallback(
-    (removed: Look, row: Look[]) => {
-      if (!removed.suggested) return
-      const candidates = reserve[removed.brand] ?? []
-      const entries = candidates
-        .map((spare, index) => ({ spare, index }))
-        .filter(
-          (entry) =>
-            !suggested.some(
-              (look) => look.brand === removed.brand && look.lookNo === entry.spare.lookNo,
-            ),
-        )
-      if (!entries.length) {
-        setReserveNote(`No more ${removed.brand} looks left in this collection.`)
-        return
-      }
-      const kept = row.flatMap((look) => (look.src ? [{ id: look.id, src: look.src }] : []))
-      const slot = pickCached(
-        kept,
-        entries.map((entry) => ({
-          id: `${removed.brand}:${entry.spare.lookNo}`,
-          src: imageSource(entry.spare.image),
-        })),
-      )
-      const picked = entries[slot >= 0 ? slot : 0]
-      setReserve((current) => ({
-        ...current,
-        [removed.brand]: (current[removed.brand] ?? []).filter((_, slotIndex) => slotIndex !== picked.index),
-      }))
-      const replacement: Look = {
-        id: suggestionId(removed.brand, picked.spare.lookNo),
-        fileName: `${removed.brand}-look-${picked.spare.lookNo}.jpg`,
-        brand: removed.brand,
-        lookNo: picked.spare.lookNo,
-        season: removed.season,
-        suggested: true,
-        known: { brand: removed.brand, lookNo: picked.spare.lookNo, season: removed.season },
-        source: imageSource(picked.spare.image),
-        status: "queued",
-      }
-      setSuggested((current) => [...current, replacement])
-      void processQueue([replacement])
-      setReserveNote(null)
-      void describeTaste(kept, {
-        id: `${removed.brand}:${picked.spare.lookNo}`,
-        src: imageSource(picked.spare.image),
-      }).then((why) => setReserveNote(`Taste · look ${picked.spare.lookNo} — ${why}`))
-    },
-    [reserve, processQueue, suggested],
-  )
-
-  // Warm the reserve while the board is on screen, so the first delete already has signatures.
-  useEffect(() => {
-    if (stage !== "board") return
-    warmTaste(
-      Object.values(reserve)
-        .flatMap((list) => list.slice(0, 6).map((spare) => imageSource(spare.image)))
-        .slice(0, 40),
-    )
-  }, [stage, reserve])
-
-  const canRemoveLook = useCallback(
-    (look: Look, rowCount: number) => {
-      if (rowCount > MIN_PER_ROW) return true
-      return (reserve[look.brand]?.length ?? 0) > 0
-    },
-    [reserve],
-  )
-
   const buildBoard = useCallback(() => {
     if (!canBuild) return
     storeBoard({
@@ -496,10 +367,13 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
         .filter((look) => typeof look.source === "string")
         .map((look) => ({ ...look, status: "ready" as const })),
     })
-    setStage("board")
     setOpen(false)
+    // The board is a page: hand off to /board so the header and demo guide (and the next act)
+    // are there. The dialog used to render ReviewBoard inline over the landing page, covering
+    // the site chrome and leaving no way back to the demo.
+    router.push("/board")
     void processQueue(pool)
-  }, [canBuild, contactEmail, clientName, deliveryDate, jobName, pool, processQueue])
+  }, [canBuild, contactEmail, clientName, deliveryDate, jobName, pool, processQueue, router])
 
   const trigger =
     kind === "nav" ? (
@@ -770,23 +644,6 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
         </DialogContent>
       </Dialog>
 
-      {stage === "board" ? (
-        <ReviewBoard
-          looks={pool}
-          job={{ title: jobName, description: clientName, email: contactEmail, dueDate: deliveryDate }}
-          progress={progress}
-          onRemoveLook={refillSuggestion}
-          canRemove={canRemoveLook}
-          onSuggest={suggestMeta?.hasMore ? () => void suggestMore() : undefined}
-          suggesting={moreLoading}
-          suggestError={note}
-          onBack={() => {
-            clearStoredBoard()
-            setStage("details")
-            setOpen(true)
-          }}
-        />
-      ) : null}
     </>
   )
 }
