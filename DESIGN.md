@@ -433,6 +433,12 @@ Approval is a hand-off, and the point of it is that neither side has to describe
   it marks it seen, so the badge clears the way the DB bell's badge clears.
 - **`/approved` is the client's board, not a summary.** Same order, same tiles, same markups over the
   same photographs — a stylist reads the actual pen, and can say what the client meant without asking.
+- **Every panel tile is draggable, and the destination decides** (2026-11-07). A generation, a
+  saved asset or an approved select can be dropped **on the canvas** (it becomes a reference card) or
+  **on an existing reference card** (it replaces that card's photograph, keeping the card's place in
+  the graph). One payload carries the clean picture, an optional markup layer and a caption, so the
+  panel never needs to know where the pointer is going; only reference cards accept the replace drop,
+  and the card shows `drop to replace this reference` while the tile is over it.
 - **The pen becomes geometry in the studio** (2026-11-07). A dropped select arrives with the
   client's markup read back off the PNG: the red strokes are reduced to their bounding box (the piece
   the client pointed at) and shown as the card's own red box, so the stylist can `clear` it and
