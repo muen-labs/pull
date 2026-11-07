@@ -462,3 +462,40 @@ Approval is a hand-off, and the point of it is that neither side has to describe
   because an agent run produced it.
 - **The label/rates half is deliberately still a build item**, not a polish one: the Shippo panel on
   this surface is what intake means in full, and it is out of scope until the rates story is rebuilt.
+
+---
+
+## 14. The PRISM mirror (2026-11-07)
+
+Block Convey PRISM is observability, not a provider: it stores model exchanges and groups them into
+runs. The widget is that mirror on screen, and it exists for one claim a spinner cannot make — a
+ZooWork call is observable, timed, and attributable to the exact model that produced it.
+
+- **Both model slots are the sponsor's.** ZooWork (the hackathon sponsor) provides the LLM that reads
+  references and writes prompts and the image model that renders, on one key and one bill. The panel
+  says so once, above the trace: `sponsor · ZooWork — Managed Agents · LLM + image models`, then a
+  two-cell rail — LLM `Gemini 3.8 Flash` / `gemini-3.8-flash`, IMAGE `GPT Image 2` / `gpt-image-2`.
+  The rail prints the wire name without the `litellm/` prefix; the full alias is in the cell's
+  tooltip. Unknown aliases are printed exactly as the deployment declared them, never prettified.
+- **One row per model call, not one row per tool.** The canvas run is two rows — `zoowork.vision`,
+  then `zoowork.image_generate` — each with its real duration and one line of what it did. A fetch or
+  a template step is not a model call and does not appear; the full tool trace stays at `/trace`
+  (`/suggest-looks` shows both, side by side). This is why the widget can call itself a mirror without
+  lying about the record.
+- **It is the one dark block on a light page.** Tokens only: `--dark`, `--dark-2`, `--dark-line`,
+  `--dark-text`, `--dark-muted`, `--dark-ok` — the fixed lookbook material, not a mode. It is an
+  instrument, so it stays rectangular, mono, and quiet; nothing in it is brand-coloured.
+- **It opens when the run does, and it tells the truth about the run.** On Run the panel appears with
+  a `zoowork.run` row, replaces it with a running row as each phase is named, then resolves to the
+  server's records (real durations, resolved models) when the result lands. A failed run leaves the
+  rows marked `failed` with the reason — the mirror does not hide a failure to make a demo look good.
+  The footer reads `{n} model calls · {total}` and `/trace is the record`; the header shows
+  `sink · connected` only when `PRISMTRACE_*` is configured, `sink · not set` otherwise.
+- **A replay says it is a replay.** On `/suggest-looks` the research run is recorded data, so the sink
+  line appends `· replay`. The mounted surface must never imply a live call it did not make.
+- **On the canvas it gets a strip of the frame, not a layer over the graph.** The widget sits
+  bottom-left; the graph re-frames around it (and again when it is dismissed) so no reference card
+  hides behind the panel. It can be hidden, and it comes back on the next run.
+- **One PRISM session per compose run.** The vision and image exchanges share a session id
+  (`pull-canvas-<start epoch>`), so PRISM reads them as one trajectory; the ZooWork session id rides
+  in metadata, where it belongs. Emission is fire-and-forget and never in the request path.

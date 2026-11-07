@@ -1,0 +1,123 @@
+1
+00:00:00,000 --> 00:00:03,520
+Every season, a stylist gets
+hundreds of runway screenshots.
+
+2
+00:00:03,870 --> 00:00:08,610
+This is PULL — the whole job,
+from screenshots to signed-off looks.
+
+3
+00:00:09,110 --> 00:00:11,400
+Drop in the folder.
+
+4
+00:00:11,700 --> 00:00:15,220
+The agent reads every caption
+and trims it.
+
+5
+00:00:15,520 --> 00:00:19,440
+Every look is filed under its house,
+ready to shortlist.
+
+6
+00:00:19,740 --> 00:00:23,260
+Nothing is published until you say so.
+
+7
+00:00:23,760 --> 00:00:28,910
+Send one link. Your client opens it
+with no account, no app.
+
+8
+00:00:29,210 --> 00:00:32,730
+They approve what they love,
+and pass the rest.
+
+9
+00:00:33,030 --> 00:00:38,590
+And they can circle the exact piece
+they want, right on the look.
+
+10
+00:00:38,890 --> 00:00:42,000
+That markup comes back to your board.
+
+11
+00:00:42,500 --> 00:00:47,240
+From the approvals, the agent drafts
+one email per showroom.
+
+12
+00:00:47,540 --> 00:00:51,460
+Every approved look, the shoot dates,
+the ship-to address.
+
+13
+00:00:51,760 --> 00:00:55,280
+You read it, edit it, and approve it.
+
+14
+00:00:55,580 --> 00:00:59,100
+Nothing leaves the studio
+until you approve it.
+
+15
+00:00:59,600 --> 00:01:03,520
+The studio is where ZooWork
+does the heavy lifting.
+
+16
+00:01:03,820 --> 00:01:08,970
+Four references, and a border
+you drew around one of them.
+
+17
+00:01:09,270 --> 00:01:14,420
+The ZooWork agent reads the pictures
+and writes the edit prompt.
+
+18
+00:01:14,720 --> 00:01:18,640
+GPT Image 2 renders the look —
+ZooWork's image model.
+
+19
+00:01:18,940 --> 00:01:21,640
+Vision and image, both from ZooWork.
+
+20
+00:01:21,940 --> 00:01:27,500
+Every call is mirrored to PRISM,
+with the model and the latency.
+
+21
+00:01:28,000 --> 00:01:31,520
+The suggestions start from
+the client's own record.
+
+22
+00:01:31,820 --> 00:01:34,930
+What they wore, and for which house.
+
+23
+00:01:35,230 --> 00:01:41,190
+Then eight looks from each house's runway,
+each collection linked to its source.
+
+24
+00:01:41,690 --> 00:01:46,020
+Every tool call and every model call,
+in the open.
+
+25
+00:01:46,320 --> 00:01:49,840
+Models by ZooWork.
+Traces by PRISM.
+
+26
+00:01:50,140 --> 00:01:53,660
+PULL. From screenshots
+to signed-off looks.

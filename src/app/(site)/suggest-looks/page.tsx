@@ -2,7 +2,9 @@ import type { Metadata } from "next"
 import Link from "next/link"
 
 import { AgentTrace } from "@/components/AgentTrace"
-import { PrismTraceWidget } from "@/components/skills/PrismTraceWidget"
+import { PrismTraceWidget } from "@/components/PrismTraceWidget"
+import { prismConfigured } from "@/lib/agent/prism"
+import { ZOOWORK_IMAGE, ZOOWORK_LLM, type PrismCall } from "@/lib/agent/prism-calls"
 import { runSuggestLooks } from "@/lib/agent/skills/suggest-looks"
 
 export const dynamic = "force-dynamic"
@@ -36,10 +38,24 @@ export default function SuggestLooksPage() {
   const run = runSuggestLooks()
   const associated = run.evidence.filter((brand) => brand.association === "client")
   const tangential = run.evidence.filter((brand) => brand.association === "tangential")
-  const sinkConfigured = Boolean(
-    process.env.PRISMTRACE_HOST && process.env.PRISMTRACE_PROJECT_ID && process.env.PRISMTRACE_API_KEY,
-  )
+  const sinkConfigured = prismConfigured()
   const looks = run.collections.reduce((sum, collection) => sum + collection.looks.length, 0)
+  // PRISM mirrors model calls, not web fetches: only the two reasoning steps carry a model. The
+  // runway/match/pick fetches stay in the full trace above, where they belong.
+  const prismCalls: PrismCall[] = run.trace
+    .filter((step) => step.tool === "web.search" || step.tool === "looks.pick")
+    .map((step) => ({
+      id: step.id,
+      tool: step.tool,
+      kind: "llm",
+      status: step.status,
+      model: ZOOWORK_LLM.alias,
+      durationMs: step.durationMs,
+      note:
+        step.tool === "web.search"
+          ? `${run.sources.length} sources · ${run.evidence.length} houses named`
+          : `${looks} looks · 8 per house`,
+    }))
 
   return (
     <main className="container" style={{ paddingTop: 48, paddingBottom: 96 }}>
@@ -167,9 +183,18 @@ export default function SuggestLooksPage() {
           carry the real fetch time of the run that built this dataset.
         </p>
         <AgentTrace steps={run.trace} title="Suggest looks · research run" />
-        <div style={{ marginTop: 20 }}>
-          <PrismTraceWidget steps={run.trace} sinkConfigured={sinkConfigured} provider="zoowork" />
+        <div style={{ marginTop: 20, maxWidth: 640 }}>
+          <PrismTraceWidget
+            calls={prismCalls}
+            models={{ llm: ZOOWORK_LLM.alias, image: ZOOWORK_IMAGE.alias }}
+            sinkConfigured={sinkConfigured}
+            recorded
+          />
         </div>
+        <p className="small" style={{ marginTop: 10, color: "var(--muted-foreground-soft)" }}>
+          PRISM (Block Convey) mirrors the model calls, not the fetches — the panel is the replay of
+          that mirror, and ZooWork is the sponsor behind both model slots.
+        </p>
       </section>
 
       {/* 4 · sources */}

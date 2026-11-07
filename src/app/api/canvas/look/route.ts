@@ -3,8 +3,12 @@
  *
  * Body: `{ refs: [{ role?, name, dataUrl, markedDataUrl? }], prompt? }`. The vision pass
  * writes the prompt unless one is supplied (a re-run of an edited prompt). Returns
- * `{ ok: true, prompt, promptSource, image, ms }`, or `{ ok: false, reason }` so the canvas
- * can fall back to its sample output instead of dead-ending a demo.
+ * `{ ok: true, prompt, promptSource, image, ms, calls, models }`, or `{ ok: false, reason }` so the
+ * canvas can fall back to its sample output instead of dead-ending a demo.
+ *
+ * `calls` is the ZooWork model-call trace (vision, then image) with real durations; `models` names
+ * the two sponsor model slots the run used. The PRISM widget renders both, and the same records are
+ * mirrored to PRISM inside composeLook.
  */
 import { NextResponse } from "next/server"
 

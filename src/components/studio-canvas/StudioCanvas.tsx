@@ -3,19 +3,23 @@
 /**
  * The studio canvas — a node graph for making a look.
  *
- * Six kinds of step, wired left to right: upload a screenshot, write the prompt,
- * edit the image, refine it, upscale it, save it. Drag a card to move it, drag the
- * background to pan, drag a port to connect. Run walks the graph in order; when it
- * finishes, the assets panel slides out with what the save step produced.
+ * Three kinds of card, wired left to right: image (a reference the stylist can mark), Look compose
+ * (reads the refs and their borders), Save image. Drag a card to move it, drag the background to
+ * pan, drag a port to connect. Run walks the graph in order; the compose card calls the real
+ * ZooWork agent (vision + gpt-image-2), and the assets panel slides out with what the save step
+ * produced.
  *
- * A design surface: the run is modelled (durations, statuses, outputs) rather than
- * wired to a provider. The node vocabulary is the real one from PRODUCT.md Phase 4.
+ * The PRISM widget appears while a ZooWork run is in flight and after it lands: the model calls the
+ * agent made, the sponsor's two models, and how long each call took. It is a mirror — the app's own
+ * trace lives at /trace.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Loader2Icon, X } from "lucide-react"
 import type { PointerEvent } from "react"
 
+import { PrismTraceWidget } from "@/components/PrismTraceWidget"
 import { Button } from "@/components/ui/button"
+import { ZOOWORK_IMAGE, ZOOWORK_LLM, type PrismCall, type PrismModels } from "@/lib/agent/prism-calls"
 import { NodeCard } from "./NodeCard"
 import { imageDataUrl, streamJson } from "./image-bits"
 import { markupToBbox } from "./markup-to-bbox"
@@ -64,9 +68,15 @@ function defaultsFor(kind: NodeKind): Partial<CanvasNode> {
 export function StudioCanvas({
   refs,
   sampleAssets,
+  prismConfigured = false,
+  models = { llm: ZOOWORK_LLM.alias, image: ZOOWORK_IMAGE.alias },
 }: {
   refs: { name: string; image: string }[]
   sampleAssets: string[]
+  /** True when the PRISM sink is configured — the widget says so on the panel. */
+  prismConfigured?: boolean
+  /** The two ZooWork model slots this deployment runs. */
+  models?: PrismModels
 }) {
   const [nodes, setNodes] = useState<CanvasNode[]>(() => initialNodes(refs))
   const [edges, setEdges] = useState<CanvasEdge[]>(INITIAL_EDGES)
@@ -91,6 +101,10 @@ export function StudioCanvas({
   const [portPoint, setPortPoint] = useState<
     Record<string, { in: Record<string, { x: number; y: number }>; out: Record<string, { x: number; y: number }> }>
   >({})
+  /** The PRISM mirror of the current/most recent ZooWork run, and the models behind it. */
+  const [prismCalls, setPrismCalls] = useState<PrismCall[]>([])
+  const [prismModels, setPrismModels] = useState<PrismModels>(() => models)
+  const [prismHidden, setPrismHidden] = useState(false)
 
   const canvasRef = useRef<HTMLDivElement | null>(null)
   const viewRef = useRef({ camera, zoom })
@@ -98,6 +112,10 @@ export function StudioCanvas({
   const panelRef = useRef<HTMLElement | null>(null)
   const [panelWidth, setPanelWidth] = useState(0)
   const [wide, setWide] = useState(true)
+  /** The mirror takes a strip of the frame; the graph is framed around it, not under it. */
+  const prismVisible = prismCalls.length > 0 && !prismHidden
+  const prismRef = useRef(prismVisible)
+  prismRef.current = prismVisible
   const dragRef = useRef<{ id: string; startX: number; startY: number; x: number; y: number } | null>(null)
   const panRef = useRef<{ startX: number; startY: number; camX: number; camY: number } | null>(null)
   const linkRef = useRef<{ side: "in" | "out"; nodeId: string; port: string } | null>(null)
@@ -120,14 +138,16 @@ export function StudioCanvas({
     const minY = Math.min(...nodes.map((node) => node.y)) - 64
     const maxX = Math.max(...nodes.map((node) => node.x + (node.width ?? NODE_WIDTH))) + 64
     const maxY = Math.max(...nodes.map((node) => node.y + (heights[node.id] ?? 360))) + 64
-    const raw = Math.min(rect.width / (maxX - minX), rect.height / (maxY - minY), 1)
+    // Leave the mirror its strip: a graph framed behind it is a graph half hidden in the demo.
+    const usableHeight = Math.max(220, rect.height - (prismRef.current ? 300 : 0))
+    const raw = Math.min(rect.width / (maxX - minX), usableHeight / (maxY - minY), 1)
     // Never shrink the cards into illegibility; on a narrow frame the graph pans instead.
     const next = Math.min(Math.max(raw, 0.45), 1)
     const contentWidth = (maxX - minX) * next
     setZoom(next)
     setCamera({
       x: contentWidth > rect.width ? 24 - minX * next : (rect.width - contentWidth) / 2 - minX * next,
-      y: (rect.height - (maxY - minY) * next) / 2 - minY * next,
+      y: (usableHeight - (maxY - minY) * next) / 2 - minY * next,
     })
   }, [nodes, heights])
 
@@ -176,6 +196,12 @@ export function StudioCanvas({
     const timer = setTimeout(() => fitRef.current(), 540)
     return () => clearTimeout(timer)
   }, [assetsOpen])
+
+  // The mirror takes a strip of the frame too: reframe when it arrives and when it is dismissed.
+  useEffect(() => {
+    const timer = setTimeout(() => fitRef.current(), 220)
+    return () => clearTimeout(timer)
+  }, [prismVisible])
 
   const copySelected = useCallback(() => {
     const node = nodesRef.current.find((candidate) => candidate.id === selected)
@@ -499,6 +525,15 @@ export function StudioCanvas({
     setRunning(true)
     setCompleted(0)
     setStubNote(null)
+    setPrismHidden(false)
+    setPrismModels(models)
+    // A graph with a compose card is a ZooWork run: open the mirror on the connecting step, so the
+    // panel is already on screen when the first model call starts.
+    setPrismCalls(
+      order.some((node) => node.kind === "compose")
+        ? [{ id: "run", tool: "zoowork.run", kind: "tool", status: "running", note: "connecting to the managed agent" }]
+        : [],
+    )
     setNodes((current) =>
       current.map((node) => ({
         ...node,
@@ -538,6 +573,44 @@ export function StudioCanvas({
       return renders.get(edge.from) ?? nodes.find((node) => node.id === edge.from)?.output
     }
 
+    /** A phase becomes a running row the first time it is named; the final calls replace them all. */
+    const seePhase = (phase: string) => {
+      const kind: PrismCall["kind"] | null = /render/i.test(phase)
+        ? "image"
+        : /read/i.test(phase)
+          ? "llm"
+          : null
+      if (!kind) return
+      const row: PrismCall =
+        kind === "image"
+          ? {
+              id: "render",
+              tool: "zoowork.image_generate",
+              kind,
+              model: models.image,
+              status: "running",
+              note: "one edit · 1024×1024",
+            }
+          : {
+              id: "vision",
+              tool: "zoowork.vision",
+              kind,
+              model: models.llm,
+              status: "running",
+              note: "reading the references",
+            }
+      setPrismCalls((current) => {
+        const rows = current.filter((call) => call.id !== "run")
+        const existing = rows.findIndex((call) => call.id === row.id)
+        if (existing >= 0) {
+          const next = [...rows]
+          next[existing] = { ...next[existing], ...row, status: "running" }
+          return next
+        }
+        return [...rows, row]
+      })
+    }
+
     for (const node of topologicalOrder(nodes, edges)) {
       started.set(node.id, performance.now())
       patch(node.id, { status: "running" })
@@ -569,14 +642,22 @@ export function StudioCanvas({
             image?: string
             ms?: number
             reason?: string
+            calls?: PrismCall[]
+            models?: PrismModels
           }>(
             "/api/canvas/look",
             { refs: payload, prompt: node.prompt || undefined },
             (event) => {
-              if (event.type === "phase" && event.phase) patch(node.id, { progress: event.phase })
+              if (event.type === "phase" && event.phase) {
+                patch(node.id, { progress: event.phase })
+                seePhase(event.phase)
+              }
             },
           )
           if (!result.ok || !result.image) throw new Error(result.reason ?? "the compose step returned nothing")
+          // The server's records are the truth once the run lands: real durations, real models.
+          if (result.calls?.length) setPrismCalls(result.calls)
+          if (result.models) setPrismModels(result.models)
           if (result.image) {
             renders.set(node.id, result.image)
             const generation: StudioGeneration = {
@@ -624,6 +705,19 @@ export function StudioCanvas({
       // A demo that dead-ends is worse than a labelled fallback: keep the graph, say so.
       setStubNote(`provider unavailable — ${failed.reason}`)
       setAssets((current) => (current.length > 0 ? current : sampleAssets))
+      // A call that never returned is still a call PRISM/the widget should account for.
+      setPrismCalls((current) =>
+        current.map((call) =>
+          call.status === "running"
+            ? {
+                ...call,
+                status: "error" as const,
+                note: call.id === "run" ? "the managed agent could not be reached" : call.note,
+                error: failed.reason,
+              }
+            : call,
+        ),
+      )
     } else {
       setAssets((current) => [...produced, ...current])
     }
@@ -883,6 +977,19 @@ export function StudioCanvas({
             </button>
           </div>
         </div>
+
+        {/* The PRISM mirror: a ZooWork run, call by call, with the sponsor's models named. */}
+        {prismCalls.length > 0 && !prismHidden ? (
+          <div className="absolute bottom-20 left-4 z-30 w-[340px] max-w-[calc(100%-32px)] shadow-[0_18px_48px_rgba(10,10,10,0.18)]">
+            <PrismTraceWidget
+              calls={prismCalls}
+              models={prismModels}
+              sinkConfigured={prismConfigured}
+              compact
+              onDismiss={() => setPrismHidden(true)}
+            />
+          </div>
+        ) : null}
 
         {/* The assets panel, sliding out when the work lands. */}
         <aside
