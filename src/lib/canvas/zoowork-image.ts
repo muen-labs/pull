@@ -329,10 +329,12 @@ export async function composeLook(
     try {
       say("reading the pictures")
       for (let attempt = 0; attempt < 2 && read.length < 20; attempt += 1) {
-        // One attempt gets at most 90s, and a retry only happens with room for the render.
+        // The vision turn has to share the route budget with the render. ZooWork's queue can
+        // stretch a four-image read past two minutes, so the first attempt gets up to 150 s and
+        // the render keeps a 120 s reserve; a retry only happens with room for the render.
         if (attempt > 0 && remaining() < 170_000) break
-        const readCap = remaining() > 240_000 ? 120_000 : 90_000
-        const readBudget = Math.min(readCap, Math.max(20_000, remaining() - 150_000))
+        const readCap = remaining() > 200_000 ? 150_000 : 90_000
+        const readBudget = Math.min(readCap, Math.max(20_000, remaining() - 120_000))
         try {
           const session = await c.createSession(agentId, {
             initial_events: [{ type: "user.message", content: visionContent }],
