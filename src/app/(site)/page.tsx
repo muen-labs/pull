@@ -37,8 +37,8 @@ function stripImages(): string[] {
 const STEPS: HowStep[] = [
   {
     n: "01",
-    title: "Read the floor",
-    body: "Drop the folder of screenshots. Pull trims the chrome, reads the look number and the season, and files every look under its house.",
+    title: "Read the runway",
+    body: "Drop the folder of screenshots. Pull trims the image, reads the look number and the season, and files every look under its brand.",
     label: "The board — every look, filed by house",
     screen: "/landing/screen-board.png",
     alt: "The board: looks grouped by house, one shortlisted, one in a hairline grid",
@@ -46,15 +46,15 @@ const STEPS: HowStep[] = [
   {
     n: "02",
     title: "Send one link",
-    body: "Your client opens it with nothing to install and no account. They approve what they love, pass the rest, and circle the pieces they actually want.",
+    body: "Your client opens it with nothing to install and no account. They prioritize what they love and circle the pieces they actually want.",
     label: "The client's page — approve, pass, circle",
     screen: "/landing/screen-client.png",
     alt: "The client's page: looks approved, passed and circled with a red pen",
   },
   {
     n: "03",
-    title: "Let the requests go",
-    body: "The agent drafts one email per showroom with the approved looks and the shoot dates. You approve it and it sends. Boxes, weights and labels follow the same board.",
+    title: "Send the requests out",
+    body: "The agent drafts emails per showroom with the approved looks and the shoot details. You approve it and it sends. Boxes, weights and labels follow the same board.",
     label: "Request emails — one per showroom, drafted",
     screen: "/landing/screen-requests.png",
     alt: "Request emails: the agent's run, then one draft per house with the looks and shoot dates",
@@ -114,10 +114,8 @@ export default function LandingPage() {
   return (
     <main>
       <section className="mx-auto max-w-[1440px] px-6 pt-14 md:px-10 md:pt-20">
-        <p className="text-[11px] tracking-[0.02em] text-muted-foreground">Sample trafficking</p>
-
         <h1 className="mt-8 text-[clamp(52px,8.6vw,128px)] font-bold leading-[0.88] tracking-[-0.06em] text-foreground">
-          From screenshots to signed-off looks.
+          From selects to confirmed looks.
         </h1>
 
         {/* The action sits above the rule; the rule introduces the note. */}
@@ -127,8 +125,9 @@ export default function LandingPage() {
 
         <div className="mt-10 border-t border-border pt-6">
           <p className="max-w-[440px] text-[15px] leading-relaxed text-muted-foreground">
-            Pull reads every look, builds the boards, and sends your client one link to approve — then
-            turns those approvals into showroom requests and labels.
+            Pull. guides you through the entire process of prep. It reads every look, builds styling
+            boards, and sends off for client approval — then turns those approvals into pre-styled
+            mockups, showroom requests, and shipping labels.
           </p>
         </div>
       </section>
@@ -150,7 +149,7 @@ export default function LandingPage() {
         </div>
 
         <h2 className="mt-8 max-w-[16ch] text-[clamp(32px,4.6vw,64px)] font-semibold leading-[0.95] tracking-[-0.04em] text-foreground">
-          Screenshots in. Requests out.
+          Selects in. Requests out.
         </h2>
 
         <HowItWorks steps={STEPS} />
