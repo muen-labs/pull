@@ -18,6 +18,7 @@
  */
 import { NextResponse } from "next/server"
 import type { AgentStep } from "@/lib/agent/trace"
+import studied from "@/lib/agent/skills/suggest-looks-dataset.json"
 import {
   DEFAULT_OCCASION,
   OCCASIONS,
@@ -37,6 +38,26 @@ const UA =
 
 const SHOWN_PER_DESIGNER = 5
 const MAX_DESIGNERS = 60
+
+/** Preferred order: houses the client's own record names, then the rest of the season. */
+function brandSlug(name: string): string {
+  return name
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+}
+
+/**
+ * The houses the researched record already names for this client. The form's corrections win when
+ * the stylist has made any; this is the floor, so a first press still opens on the client's houses.
+ */
+function recordedBrands(): string[] {
+  const evidence = (studied as { evidence?: { brand: string }[] }).evidence ?? []
+  return [...new Set(evidence.map((row) => brandSlug(row.brand)))]
+}
 
 interface Look {
   lookNo: number
@@ -478,8 +499,9 @@ async function runResearch(input: {
     for (const slug of source.slugs) if (!entryBySlug.has(slug)) entryBySlug.set(slug, { season: source.season, slug })
   }
   const seed = clientName.trim().toLowerCase()
+  const worn = record.brandsWorn.length ? record.brandsWorn : recordedBrands()
   const ranking = rankHouses([...entryBySlug.keys()], occasion, seed, {
-    brandsWorn: record.brandsWorn,
+    brandsWorn: worn,
     brandsAvoid: record.brandsAvoid,
     registers: extraRegisters,
   })
