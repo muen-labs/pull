@@ -1,5 +1,6 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 /**
  * The review board — job header, looks grouped by house, and the shortlist rail.
  *
@@ -16,6 +17,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { readBoardTaste, type TasteTraits } from "@/lib/taste"
 import type { IngestStep } from "./ingest"
+import Link from "next/link"
+import { storeBoard } from "@/lib/board-store"
 
 export type LookStatus = "queued" | "cropping" | "reading" | "ready" | "error"
 
@@ -203,7 +206,8 @@ export function ReviewBoard({
   reseeding = false,
 }: ReviewBoardProps) {
   const [added, setAdded] = useState<string[]>([])
-  const [sendState, setSendState] = useState<"idle" | "needs-backend">("idle")
+  const [sendState, setSendState] = useState<"idle" | "sent">("idle")
+  const router = useRouter()
   /** Where the sheet starts: below the demo guide and site header, so they stay on screen. */
   const sheetTop = useSheetChromeTop(chrome === "sheet")
 
@@ -226,6 +230,16 @@ export function ReviewBoard({
   }, [looks, removedIds])
   const grouped = useMemo(() => groupByBrand(visible), [visible])
   const addedLooks = useMemo(() => visible.filter((l) => added.includes(l.id)), [visible, added])
+
+  /** The demo client link: this shortlist, handed to Act 2 in this tab. */
+  const sendToClient = () => {
+    if (!addedLooks.length) return
+    // Same storage the board uses: `/client` reads it back, so the link carries the shortlist
+    // rather than the seeded fixture set.
+    storeBoard({ job, looks: addedLooks })
+    setSendState("sent")
+    router.push("/client")
+  }
 
   // The pattern across the board, read in the browser and shown as chips under the title. It
   // follows the pictures that are still on the board, so a delete shifts what the board reads as.
@@ -252,10 +266,13 @@ export function ReviewBoard({
     }
   }, [tasteSources])
 
-  const toggleAdded = (id: string) =>
+  const toggleAdded = (id: string) => {
+    setSendState("idle")
     setAdded((current) => (current.includes(id) ? current.filter((x) => x !== id) : [...current, id]))
+  }
 
   const removeLook = (look: Look) => {
+    setSendState("idle")
     setFocus(look.brand)
     const row = visible.filter((entry) => entry.brand === look.brand && entry.id !== look.id)
     setRemoved((current) => (current.some((entry) => entry.id === look.id) ? current : [...current, look]))
@@ -268,6 +285,7 @@ export function ReviewBoard({
 
   /** Remove a house from the board: every look goes to the bin, so the house can come back. */
   const removeBrand = (brand: string, row: Look[]) => {
+    setSendState("idle")
     // If the chips were reading this house, they fall back to the board rather than vanishing.
     setFocus((current) => (current === brand ? null : current))
     setRemoved((current) => {
@@ -459,20 +477,34 @@ export function ReviewBoard({
                     Hover a look and press + to shortlist it.
                   </p>
                 )}
-                {/* The action stays: pressing it explains why nothing can be minted here, it does
-                    not consume the control. */}
-                <Button
-                  className="mt-4 w-full"
-                  disabled={added.length === 0}
-                  onClick={() => setSendState("needs-backend")}
-                >
-                  Send to client
+                <Button className="mt-4 w-full" disabled={added.length === 0} onClick={sendToClient}>
+                  {sendState === "sent" ? "Send again" : "Send to client"}
                 </Button>
-                {sendState === "needs-backend" ? (
-                  <p role="status" className="mt-3 rounded-md border border-border bg-muted p-3 text-[12px] leading-snug text-foreground">
-                    Held in the browser. Minting the client link and emailing it needs the database
-                    connection, so nothing was sent.
-                  </p>
+                {sendState === "sent" ? (
+                  <div
+                    role="status"
+                    className="mt-3 rounded-md border border-border bg-muted p-3 text-[12px] leading-snug text-foreground"
+                  >
+                    <p>
+                      Client link ready — {addedLooks.length} look
+                      {addedLooks.length === 1 ? "" : "s"} for {job.description || "your client"}. Act 2
+                      now opens this shortlist.
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-3">
+                      <Link href="/client" className="underline underline-offset-2">
+                        Open the client page →
+                      </Link>
+                      <button
+                        type="button"
+                        className="text-[11px] text-muted-foreground underline underline-offset-2"
+                        onClick={() => {
+                          void navigator.clipboard?.writeText(`${window.location.origin}/client`)
+                        }}
+                      >
+                        copy link
+                      </button>
+                    </div>
+                  </div>
                 ) : null}
               </PopoverContent>
             </Popover>
