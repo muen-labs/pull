@@ -1,5 +1,6 @@
 "use client"
 
+import type { OccasionKey } from "@/lib/agent/skills/occasion"
 import type { Look } from "@/components/start-job/ReviewBoard"
 
 /**
@@ -17,6 +18,8 @@ export const BOARD_KEY = "pull.board.v1"
 
 export interface StoredBoard {
   job: { title: string; description: string; email: string; dueDate: string }
+  /** The occasion the board was researched for; a reload keeps the same brief. */
+  occasion?: OccasionKey
   looks: Look[]
   /**
    * The spares each house still holds from its collection, keyed by brand. Carried with the board

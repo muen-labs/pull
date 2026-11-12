@@ -28,8 +28,14 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AgentTrace } from "@/components/AgentTrace"
 import { clearStoredBoard, readStoredBoard, storeBoard, type StoredBoard } from "@/lib/board-store"
+import {
+  DEFAULT_OCCASION,
+  OCCASION_OPTIONS,
+  type OccasionKey,
+} from "@/lib/agent/skills/occasion"
 import type { AgentStep } from "@/lib/agent/trace"
 import { ingestLook } from "./ingest"
 import { suggestionId, type Look } from "./ReviewBoard"
@@ -68,6 +74,7 @@ interface SuggestLooksResponse {
   clientName: string
   gender: { value: "male" | "female" | "unknown"; evidence: string; sourceUrl: string }
   season: { slug: string; label: string; url: string }
+  occasion: { key: OccasionKey; label: string; formality: number }
   designers: ApiDesigner[]
   trace: SuggestStep[]
   hasMore: boolean
@@ -149,6 +156,8 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
   const [clientName, setClientName] = useState("")
   const [contactEmail, setContactEmail] = useState("")
   const [deliveryDate, setDeliveryDate] = useState("")
+  /** What the looks are for. Red carpet is the most formal; personal the most casual. */
+  const [occasion, setOccasion] = useState<OccasionKey>(DEFAULT_OCCASION)
 
   const [looks, setLooks] = useState<Look[]>([])
   const [suggested, setSuggested] = useState<Look[]>([])
@@ -199,6 +208,7 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
     setClientName("")
     setContactEmail("")
     setDeliveryDate("")
+    setOccasion(DEFAULT_OCCASION)
     setNote(null)
     setProgress(null)
     setSuggestMeta(null)
@@ -227,6 +237,7 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
   const streamResearch = useCallback(
     async (
       client: string,
+      occasion: OccasionKey,
       offset: number,
       limit: number,
       on: { step?: (step: SuggestStep) => void; designer?: (designer: ApiDesigner) => void },
@@ -234,7 +245,7 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
       const response = await fetch("/api/skills/suggest-looks", {
         method: "POST",
         headers: { "content-type": "application/json", accept: "application/x-ndjson" },
-        body: JSON.stringify({ clientName: client, offset, limit, stream: true }),
+        body: JSON.stringify({ clientName: client, occasion, offset, limit, stream: true }),
       })
       if (!response.ok || !response.body) {
         const error = (await response.json().catch(() => ({}))) as { error?: string }
@@ -274,6 +285,7 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
     researchInFlight.current = true
     const client = clientName.trim()
     if (!client) {
+      researchInFlight.current = false
       setNote("Add the client's name first — the research starts there.")
       return
     }
@@ -286,7 +298,7 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
     setDesignerCount(0)
     setReserve({})
     try {
-      const data = await streamResearch(client, 0, 10, {
+      const data = await streamResearch(client, occasion, 0, 10, {
         step: (step) => setSuggestTrace((current) => appendStep(current, step)),
         designer: (designer) => {
           setSuggested((current) => [...current, ...looksFromDesigners([designer])])
@@ -303,7 +315,7 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
       researchInFlight.current = false
       setLoadingSuggestions(false)
     }
-  }, [clientName, loadingSuggestions, streamResearch])
+  }, [clientName, loadingSuggestions, occasion, streamResearch])
 
   /** Work the queue: one look at a time, on screen, with its real durations. */
   const processQueue = useCallback(async (queue: Look[]) => {
@@ -349,7 +361,7 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
     setNote(null)
     const added: Look[] = []
     try {
-      const data = await streamResearch(client, designerCount, 5, {
+      const data = await streamResearch(client, occasion, designerCount, 5, {
         step: (step) => setSuggestTrace((current) => appendStep(current, step)),
         designer: (designer) => {
           const fresh = looksFromDesigners([designer])
@@ -376,7 +388,7 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
       researchInFlight.current = false
       setMoreLoading(false)
     }
-  }, [clientName, designerCount, moreLoading, processQueue, streamResearch, suggestMeta?.hasMore])
+  }, [clientName, designerCount, moreLoading, occasion, processQueue, streamResearch, suggestMeta?.hasMore])
 
   const pool = useMemo(() => [...looks, ...suggested], [looks, suggested])
 
@@ -387,6 +399,7 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
     if (!canBuild) return
     storeBoard({
       job: { title: jobName, description: clientName, email: contactEmail, dueDate: deliveryDate },
+      occasion,
       looks: pool
         .filter((look) => typeof look.source === "string")
         .map((look) => ({
@@ -445,6 +458,24 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
                 placeholder="Oscar campaign"
                 autoFocus
               />
+            </div>
+            <div className="flex flex-col gap-2 sm:col-span-2">
+              <Label htmlFor="occasion">Occasion</Label>
+              <Select value={occasion} onValueChange={(value) => setOccasion(value as OccasionKey)}>
+                <SelectTrigger id="occasion" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {OCCASION_OPTIONS.map((option) => (
+                    <SelectItem key={option.key} value={option.key}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground">
+                Red carpet is the most formal; personal the most casual.
+              </p>
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="client-name">Client name</Label>
@@ -571,6 +602,10 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
                       >
                         {suggestMeta.gender.evidence}
                       </a>
+                      <p className="text-[12px] text-muted-foreground">
+                        occasion read as{" "}
+                        <span className="font-medium text-foreground">{suggestMeta.occasion.label}</span>
+                      </p>
                       <a
                         href={suggestMeta.season.url}
                         target="_blank"
@@ -651,7 +686,7 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
               className="agent-action"
               onClick={() => void suggestLooks()}
               disabled={loadingSuggestions}
-              title="Seeds the board with menswear picks"
+              title="Seeds the board from the client and the occasion"
             >
               <Sparkles className="size-4" aria-hidden />
               {loadingSuggestions ? "Finding looks…" : "Suggest looks"}
