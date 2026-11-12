@@ -23,23 +23,43 @@ function contactFor(brand: string): string {
   return `pr@${brand.toLowerCase().replace(/[^a-z]/g, "")}.demo`
 }
 
+/** The request's delivery address — the studio's, as the template has it. */
+const DELIVERY_ADDRESS = "Pull Studio · 12 Mercer St, New York, NY 10013"
+
+function shiftDay(iso: string, days: number): string {
+  if (!iso) return ""
+  const date = new Date(`${iso}T00:00:00`)
+  if (Number.isNaN(date.getTime())) return ""
+  date.setDate(date.getDate() + days)
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${date.getFullYear()}-${month}-${day}`
+}
+
+/**
+ * The landing form has one delivery date. The request treats it as the event date and builds the
+ * fitting window around it — clothes in the day before, the fitting two days before, return a week
+ * after — so the email reads like a studio request rather than a form dump.
+ */
+function jobFrom(board: { title: string; client: string; dueDate: string }): RequestJob {
+  const event = board.dueDate
+  return {
+    client: board.client,
+    title: board.title,
+    shootDate: event,
+    clothesInDate: shiftDay(event, -1),
+    fittingDate: shiftDay(event, -2),
+    callInDate: shiftDay(event, -1),
+    returnDate: shiftDay(event, 7),
+    shipTo: DELIVERY_ADDRESS,
+  }
+}
+
 interface RequestsView {
   job: RequestJob
   brands: RequestBrand[]
   demo: boolean
   waiting: boolean
-}
-
-/** The landing form has one date; the draft repeats it as the shoot window. */
-function jobFrom(title: string, client: string, dueDate: string): RequestJob {
-  return {
-    client,
-    title,
-    shootDate: dueDate,
-    callInDate: dueDate,
-    returnDate: dueDate,
-    shipTo: "Pull Studio · 12 Mercer St, New York, NY 10013",
-  }
 }
 
 export function RequestsFromReview({
@@ -61,7 +81,7 @@ export function RequestsFromReview({
       return
     }
 
-    const job = jobFrom(board.job.title, board.job.description, board.job.dueDate)
+    const job = jobFrom({ title: board.job.title, client: board.job.description, dueDate: board.job.dueDate })
 
     // A board exists, but the client has not sent anything back yet.
     if (!record) {
