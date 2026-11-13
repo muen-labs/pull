@@ -82,7 +82,8 @@ export const workspaces = pgTable(
     /** The Clerk Organization this workspace mirrors. Null until a personal workspace joins one. */
     clerkOrgId: text("clerk_org_id"),
     /**
-     * Which Muen product this workspace belongs to — `pull`, `brand-os`, `nerv`, `voice-koara`.
+     * Which Muen product this workspace belongs to — `pull`, `mitsumeru`, `brand-os`, `nerv`,
+     * `voice-koara`.
      *
      * One Clerk application serves the whole portfolio, so an organization is a *customer* in every
      * product at once. Without this column the same studio would be one tenant across all of them,
