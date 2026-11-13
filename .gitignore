@@ -30,3 +30,9 @@ test-results/
 # Local scratch: screenshots, one-off scripts, throwaway worktrees
 tmp/
 .clerk/
+
+# Agent skill packs (installed by `npx skills add …`; tooling, not product code)
+.agents/
+.claude/
+agent/
+skills-lock.json
