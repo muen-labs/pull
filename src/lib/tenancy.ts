@@ -17,6 +17,13 @@ import { and, eq } from "drizzle-orm"
 import { db } from "@/db/client"
 import { memberships, users, workspaces } from "@/db/schema"
 
+/**
+ * Which Muen product this deployment is. One Clerk application serves the whole portfolio, so an
+ * organization is a customer in every product at once — this constant is what keeps PULL's workspaces
+ * distinct from Brand OS's for the same studio. Override per deployment with `MUEN_PRODUCT`.
+ */
+export const PRODUCT = process.env.MUEN_PRODUCT?.trim() || "pull"
+
 /** What a signed-in stylist needs from the database, resolved once per request. */
 export interface Stylist {
   /** Our `users.id` — the uuid the rest of the schema references. */
@@ -129,19 +136,19 @@ async function workspaceForOrg(org: { id: string; name: string }): Promise<strin
   const found = await db()
     .select({ id: workspaces.id })
     .from(workspaces)
-    .where(eq(workspaces.clerkOrgId, org.id))
+    .where(and(eq(workspaces.clerkOrgId, org.id), eq(workspaces.product, PRODUCT)))
     .limit(1)
   if (found[0]) return found[0].id
 
   await db()
     .insert(workspaces)
-    .values({ name: org.name, clerkOrgId: org.id })
-    .onConflictDoNothing({ target: workspaces.clerkOrgId })
+    .values({ name: org.name, clerkOrgId: org.id, product: PRODUCT })
+    .onConflictDoNothing({ target: [workspaces.clerkOrgId, workspaces.product] })
 
   const created = await db()
     .select({ id: workspaces.id })
     .from(workspaces)
-    .where(eq(workspaces.clerkOrgId, org.id))
+    .where(and(eq(workspaces.clerkOrgId, org.id), eq(workspaces.product, PRODUCT)))
     .limit(1)
   if (!created[0]) throw new Error(`pull: could not resolve a workspace for organization ${org.id}`)
   return created[0].id
@@ -152,12 +159,16 @@ async function workspaceForUser(user: { id: string; email: string }): Promise<st
   const found = await db()
     .select({ workspaceId: memberships.workspaceId })
     .from(memberships)
-    .where(eq(memberships.userId, user.id))
+    .innerJoin(workspaces, eq(workspaces.id, memberships.workspaceId))
+    .where(and(eq(memberships.userId, user.id), eq(workspaces.product, PRODUCT)))
     .limit(1)
   if (found[0]) return found[0].workspaceId
 
   const name = user.email.split("@")[0] || "Studio"
-  const created = await db().insert(workspaces).values({ name }).returning({ id: workspaces.id })
+  const created = await db()
+    .insert(workspaces)
+    .values({ name, product: PRODUCT })
+    .returning({ id: workspaces.id })
   if (!created[0]) throw new Error("pull: could not create a personal workspace")
   return created[0].id
 }

@@ -74,19 +74,33 @@ export const users = pgTable("users", {
  * invitations, this table owns the uuid the database joins on and the billing state Stripe will
  * write. Nullable so a personal workspace exists before it is attached to an organization.
  */
-export const workspaces = pgTable("workspaces", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  clerkOrgId: text("clerk_org_id").unique(),
-  /** The billing plan: `solo` | `studio` | `house` (PRODUCT.md pricing). */
-  plan: text("plan").notNull().default("solo"),
-  /** Seats = active memberships. Stripe's subscription quantity mirrors this. */
-  seatCount: integer("seat_count").notNull().default(1),
-  stripeCustomerId: text("stripe_customer_id"),
-  stripeSubscriptionId: text("stripe_subscription_id"),
-  currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-})
+export const workspaces = pgTable(
+  "workspaces",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    /** The Clerk Organization this workspace mirrors. Null until a personal workspace joins one. */
+    clerkOrgId: text("clerk_org_id"),
+    /**
+     * Which Muen product this workspace belongs to — `pull`, `brand-os`, `nerv`, `voice-koara`.
+     *
+     * One Clerk application serves the whole portfolio, so an organization is a *customer* in every
+     * product at once. Without this column the same studio would be one tenant across all of them,
+     * and separating their data would rest on remembering to filter, not on the schema. The unique
+     * index below is on (org, product): one workspace per product per customer, never a shared one.
+     */
+    product: text("product").notNull().default("pull"),
+    /** The billing plan: `solo` | `studio` | `house` (PRODUCT.md pricing). */
+    plan: text("plan").notNull().default("solo"),
+    /** Seats = active memberships. Stripe's subscription quantity mirrors this. */
+    seatCount: integer("seat_count").notNull().default(1),
+    stripeCustomerId: text("stripe_customer_id"),
+    stripeSubscriptionId: text("stripe_subscription_id"),
+    currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("workspaces_org_product_idx").on(t.clerkOrgId, t.product)],
+)
 
 /**
  * Who belongs to which workspace, and in what role.
