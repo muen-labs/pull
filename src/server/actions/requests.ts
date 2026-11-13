@@ -25,7 +25,7 @@ async function ownedEmail(stylistId: string, emailId: string) {
   const [job] = await db()
     .select()
     .from(jobs)
-    .where(and(eq(jobs.id, row.jobId), eq(jobs.userId, stylistId)))
+    .where(and(eq(jobs.id, row.jobId), eq(jobs.workspaceId, stylistId)))
     .limit(1)
   return job ? { email: row, job } : null
 }
@@ -51,7 +51,7 @@ export async function draftNowForm(form: FormData): Promise<void> {
   const [job] = await db()
     .select()
     .from(jobs)
-    .where(and(eq(jobs.id, jobId), eq(jobs.userId, stylist.id)))
+    .where(and(eq(jobs.id, jobId), eq(jobs.workspaceId, stylist.workspaceId)))
     .limit(1)
   if (!job) fail(jobId, "Job not found.")
   const result = await ensureDrafts(jobId)
@@ -105,7 +105,7 @@ export async function sendAllApprovedForm(form: FormData): Promise<void> {
   const [job] = await db()
     .select()
     .from(jobs)
-    .where(and(eq(jobs.id, jobId), eq(jobs.userId, stylist.id)))
+    .where(and(eq(jobs.id, jobId), eq(jobs.workspaceId, stylist.workspaceId)))
     .limit(1)
   if (!job) redirect("/studio")
 
@@ -205,7 +205,7 @@ export async function polishDraftForm(form: FormData): Promise<void> {
   if (approvedLooks.length === 0) fail(job.id, "No approved looks for this brand.")
 
   const [stylistRow] = await db().select().from(users).where(eq(users.id, stylist.id)).limit(1)
-  const stylistContacts = await db().select().from(contacts).where(eq(contacts.userId, stylist.id))
+  const stylistContacts = await db().select().from(contacts).where(eq(contacts.workspaceId, stylist.workspaceId))
   const contact = stylistContacts.find((row) => sameBrand(row.brand, request.brand))
 
   const draft = await draftRequestEmail(

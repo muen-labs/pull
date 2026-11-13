@@ -7,16 +7,16 @@ export type JobRow = typeof jobs.$inferSelect
 export type BoardRow = typeof boards.$inferSelect
 export type LookRow = typeof looks.$inferSelect
 
-export async function listJobs(userId: string): Promise<JobRow[]> {
-  return db().select().from(jobs).where(eq(jobs.userId, userId)).orderBy(desc(jobs.createdAt))
+export async function listJobs(workspaceId: string): Promise<JobRow[]> {
+  return db().select().from(jobs).where(eq(jobs.workspaceId, workspaceId)).orderBy(desc(jobs.createdAt))
 }
 
 /** A job plus its visible boards and looks, ordered for the studio board grid. */
-export async function getJobBoard(userId: string, jobId: string) {
+export async function getJobBoard(workspaceId: string, jobId: string) {
   const [job] = await db()
     .select()
     .from(jobs)
-    .where(and(eq(jobs.id, jobId), eq(jobs.userId, userId)))
+    .where(and(eq(jobs.id, jobId), eq(jobs.workspaceId, workspaceId)))
     .limit(1)
   if (!job) return null
 
@@ -46,11 +46,11 @@ export async function getJobBoard(userId: string, jobId: string) {
   }
 }
 
-export async function getJob(userId: string, jobId: string): Promise<JobRow | null> {
+export async function getJob(workspaceId: string, jobId: string): Promise<JobRow | null> {
   const [job] = await db()
     .select()
     .from(jobs)
-    .where(and(eq(jobs.id, jobId), eq(jobs.userId, userId)))
+    .where(and(eq(jobs.id, jobId), eq(jobs.workspaceId, workspaceId)))
     .limit(1)
   return job ?? null
 }

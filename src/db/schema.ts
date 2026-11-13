@@ -142,7 +142,8 @@ export const jobs = pgTable(
   "jobs",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id").notNull(),
+    /** The studio that owns this job. Every read of a job is scoped by this column. */
+    workspaceId: uuid("workspace_id").notNull(),
     clientName: text("client_name").notNull(),
     /** The client's contact address — shown on the dashboard card, used when the board is sent. */
     clientEmail: text("client_email"),
@@ -174,7 +175,7 @@ export const jobs = pgTable(
     publishedAt: timestamp("published_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("jobs_user_idx").on(t.userId)],
+  (t) => [index("jobs_workspace_idx").on(t.workspaceId)],
 )
 
 export const looks = pgTable(
@@ -212,7 +213,8 @@ export const contacts = pgTable(
   "contacts",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id").notNull(),
+    /** The studio's address book. Scoped by workspace, so two studios can both know the same house. */
+    workspaceId: uuid("workspace_id").notNull(),
     brand: text("brand").notNull(),
     prMarket: text("pr_market"),
     // Written in the form Postgres stores it (`'{}'::text[]`), not `ARRAY[]::text[]`.
@@ -226,7 +228,7 @@ export const contacts = pgTable(
     shipsOnOwnAccount: boolean("ships_on_own_account").notNull().default(false),
     notes: text("notes"),
   },
-  (t) => [uniqueIndex("contacts_brand_market_idx").on(t.userId, t.brand, t.prMarket)],
+  (t) => [uniqueIndex("contacts_brand_market_idx").on(t.workspaceId, t.brand, t.prMarket)],
 )
 
 export const requests = pgTable(

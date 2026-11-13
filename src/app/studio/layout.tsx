@@ -1,13 +1,13 @@
 import Link from "next/link"
+import { OrganizationSwitcher, UserButton } from "@clerk/nextjs"
 import { requireStylist } from "@/lib/auth"
-import { signOut } from "@/server/actions/auth"
 import { AgentProviderBadge } from "@/components/AgentProviderBadge"
 
 export const metadata = { title: "Pull — dashboard" }
 
 /** Dashboard shell: the wordmark, who is signed in, and a way out. Nothing else competes. */
 export default async function StudioLayout({ children }: { children: React.ReactNode }) {
-  const stylist = await requireStylist()
+  await requireStylist()
 
   return (
     <>
@@ -18,14 +18,13 @@ export default async function StudioLayout({ children }: { children: React.React
           </Link>
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14 }}>
             <AgentProviderBadge />
-            <span className="mono" style={{ color: "var(--muted-foreground-soft)" }}>
-              {stylist.email}
-            </span>
-            <form action={signOut}>
-              <button type="submit" className="btn btn-ghost btn-sm">
-                Sign out
-              </button>
-            </form>
+            {/* The studio is an organization: this is where a stylist switches it or starts one. */}
+            <OrganizationSwitcher
+              hidePersonal={false}
+              appearance={{ elements: { rootBox: "flex items-center" } }}
+            />
+            {/* Avatar menu: manage account, sign out. Clerk owns the session, so it owns the exit. */}
+            <UserButton />
           </div>
         </div>
       </header>

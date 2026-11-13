@@ -184,6 +184,25 @@ export async function syncSeatCount(workspaceId: string): Promise<number> {
   return count
 }
 
+/**
+ * The human behind a workspace — the owner, else the earliest stylist.
+ *
+ * Used where a job needs a sender identity rather than a reader: the request drafts sign as the
+ * stylist, and the intake page shows the studio's address. The workspace is the tenant, but an email
+ * still needs a person.
+ */
+export async function stylistForWorkspace(workspaceId: string): Promise<typeof users.$inferSelect | null> {
+  const rows = await db()
+    .select({ user: users })
+    .from(memberships)
+    .innerJoin(users, eq(users.id, memberships.userId))
+    .where(eq(memberships.workspaceId, workspaceId))
+    // `owner` sorts before `stylist`, so the owner wins without a second query.
+    .orderBy(memberships.role, memberships.createdAt)
+    .limit(1)
+  return rows[0]?.user ?? null
+}
+
 /** Identity → the stylist record every server action scopes its queries by. */
 export async function resolveStylist(identity: Identity): Promise<Stylist> {
   const user = await ensureUser(identity)

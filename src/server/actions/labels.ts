@@ -25,7 +25,7 @@ async function ownedRequest(stylistId: string, requestId: string) {
   const [job] = await db()
     .select()
     .from(jobs)
-    .where(and(eq(jobs.id, request.jobId), eq(jobs.userId, stylistId)))
+    .where(and(eq(jobs.id, request.jobId), eq(jobs.workspaceId, stylistId)))
     .limit(1)
   return job ? { request, job } : null
 }

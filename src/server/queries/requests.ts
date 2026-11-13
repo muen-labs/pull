@@ -21,7 +21,7 @@ export interface RequestView {
   } | null
 }
 
-export async function getRequestsView(userId: string, jobId: string): Promise<{ requests: RequestView[]; missingContacts: string[] }> {
+export async function getRequestsView(workspaceId: string, jobId: string): Promise<{ requests: RequestView[]; missingContacts: string[] }> {
   const requestRows = await db()
     .select()
     .from(requests)

@@ -1,17 +1,21 @@
 /**
- * Auth — deliberately small for the demo: a magic link emailed through Resend, exchanged for an
- * HMAC-signed httpOnly cookie. One allow-listed stylist. No password, no user table on the hot path.
+ * Auth — two jobs, and only one of them is still ours.
  *
- * (PRD §5 named Auth.js; we drop the beta dependency for the demo and keep the same flow.
- * Swap in Auth.js later without touching callers: getSession() / requireStylist() stay the same.)
+ * **Identity** belongs to Clerk: `getStylist()` reads the session, resolves the user and their
+ * workspace through `lib/tenancy`, and every caller keeps working unchanged.
+ *
+ * **Links** stay ours: the client board (`/b/[token]`) and showroom intake (`/i/[token]`) are signed
+ * with LINK_SECRET and verified here. They must never be Clerk-gated — a client never has an account.
+ *
+ * The magic-link session below is the demo-era mechanism, kept only so `sendMagicLink` still compiles
+ * until `/login` is deleted; nothing reads the cookie any more.
  */
 import { createHash, createHmac, timingSafeEqual, randomBytes } from "node:crypto"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
-import { eq } from "drizzle-orm"
-import { db } from "@/db/client"
-import { users } from "@/db/schema"
+import { auth as clerkAuth, clerkClient } from "@clerk/nextjs/server"
 import { env, isAllowedEmail } from "./env"
+import { resolveStylist, type Stylist } from "./tenancy"
 
 const COOKIE = "pull_session"
 const MAGIC_TTL = 60 * 15 // 15 minutes
@@ -144,35 +148,34 @@ export function mintIntakeLink(requestId: string, days = 14): { token: string; h
 }
 
 /**
- * The stylist row for an allow-listed email, created on first sign-in.
+ * The signed-in stylist and the workspace they are working in.
  *
- * Upsert, not select-then-insert: a page and its layout both call requireStylist() in the same
- * render, so two requests race on the very first sign-in and the loser used to die on
- * users_email_unique. onConflictDoNothing makes the second one read instead of throw.
+ * One Clerk read for the user (email, name) and one for the organization when the session has an
+ * active one; `resolveStylist` then makes sure our `users` and `workspaces` rows exist. With no active
+ * organization the stylist lands in a personal workspace, which is the solo-stylist case.
  */
-async function ensureUser(email: string) {
-  const [created] = await db()
-    .insert(users)
-    .values({ email, name: email.split("@")[0] })
-    .onConflictDoNothing({ target: users.email })
-    .returning()
-  if (created) return created
-  const [existing] = await db().select().from(users).where(eq(users.email, email)).limit(1)
-  if (!existing) throw new Error("Could not resolve the stylist row for " + email)
-  return existing
+export async function getStylist(): Promise<Stylist | null> {
+  const { userId, orgId } = await clerkAuth()
+  if (!userId) return null
+
+  const clerk = await clerkClient()
+  const user = await clerk.users.getUser(userId)
+  const email = user.primaryEmailAddress?.emailAddress ?? user.emailAddresses[0]?.emailAddress
+  if (!email) return null
+
+  const org = orgId ? await clerk.organizations.getOrganization({ organizationId: orgId }) : null
+
+  return resolveStylist({
+    clerkUserId: userId,
+    email,
+    name: user.fullName,
+    org: org ? { id: org.id, name: org.name, slug: org.slug } : null,
+  })
 }
 
-/** Session -> stylist row, or null. Safe in route handlers (no redirect). */
-export async function getStylist(): Promise<{ id: string; email: string } | null> {
-  const session = await getSession()
-  if (!session || !isAllowedEmail(session.email)) return null
-  const user = await ensureUser(session.email)
-  return { id: user.id, email: user.email }
-}
-
-/** For pages and server actions: redirects to /login when there is no session. */
-export async function requireStylist(): Promise<{ id: string; email: string }> {
+/** For pages and server actions: sends a signed-out caller to Clerk's sign-in, keeping the return path. */
+export async function requireStylist(): Promise<Stylist> {
   const stylist = await getStylist()
-  if (!stylist) redirect("/login")
+  if (!stylist) redirect("/sign-in")
   return stylist
 }

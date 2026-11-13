@@ -21,6 +21,7 @@ import { contacts, jobs, requests, shipments, users } from "@/db/schema"
 import type { Address, ShippoRate } from "@/lib/shippo"
 import { verifyLink } from "@/lib/auth"
 import { tokenHashMatches } from "@/app/b/[token]/token"
+import { stylistForWorkspace } from "@/lib/tenancy"
 import { PICKUP_WINDOWS } from "@/components/intake/constants"
 
 export type RequestRow = typeof requests.$inferSelect
@@ -64,7 +65,7 @@ export async function authorizeIntakeToken(rawToken: string): Promise<IntakeCont
     const [contact] = request.contactId
       ? await database.select().from(contacts).where(eq(contacts.id, request.contactId)).limit(1)
       : [null]
-    const [stylist] = await database.select().from(users).where(eq(users.id, job.userId)).limit(1)
+    const stylist = await stylistForWorkspace(job.workspaceId)
     const [shipment] = await database
       .select()
       .from(shipments)

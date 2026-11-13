@@ -273,7 +273,7 @@ export async function POST(request: Request) {
   const [job] = await db()
     .select({ id: jobs.id })
     .from(jobs)
-    .where(and(eq(jobs.id, jobId), eq(jobs.userId, stylist.id)))
+    .where(and(eq(jobs.id, jobId), eq(jobs.workspaceId, stylist.workspaceId)))
     .limit(1)
   if (!job) return NextResponse.json({ error: "job not found" }, { status: 404 })
 

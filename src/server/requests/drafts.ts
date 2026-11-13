@@ -17,6 +17,7 @@ import { and, eq } from "drizzle-orm"
 import { db } from "@/db/client"
 import { contacts, emails, jobs, looks, requests, users } from "@/db/schema"
 import { mintIntakeLink } from "@/lib/auth"
+import { stylistForWorkspace } from "@/lib/tenancy"
 import { publicIntakePath } from "@/lib/share"
 import { recordHuman, recordSteps, type StepInput } from "@/lib/agent/tracer"
 import { deterministicDraft } from "@/lib/agent/request-email"
@@ -36,7 +37,7 @@ export async function ensureDrafts(jobId: string): Promise<DraftResult> {
   const [job] = await db().select().from(jobs).where(eq(jobs.id, jobId)).limit(1)
   if (!job) return { created: 0, refreshed: 0, kept: 0, brands: [], skipped: true }
 
-  const [stylist] = await db().select().from(users).where(eq(users.id, job.userId)).limit(1)
+  const stylist = await stylistForWorkspace(job.workspaceId)
   const approved = (
     await db().select().from(looks).where(and(eq(looks.jobId, jobId), eq(looks.status, "approved")))
   ).filter((look) => look.hiddenAt === null)
@@ -74,7 +75,7 @@ export async function ensureDrafts(jobId: string): Promise<DraftResult> {
 
 
   // Compare case-insensitively: "Celine" from OCR and "CELINE" from contacts are the same house.
-  const contactRows = await db().select().from(contacts).where(eq(contacts.userId, job.userId))
+  const contactRows = await db().select().from(contacts).where(eq(contacts.workspaceId, job.workspaceId))
   const contactsByBrand = new Map(contactRows.map((row) => [brandKey(row.brand), row]))
 
   for (const [brand, brandLooks] of byBrand.entries()) {

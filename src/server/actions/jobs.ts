@@ -39,7 +39,7 @@ export async function createJob(_prev: ActionResult | null, form: FormData): Pro
 
   const [job] = await db()
     .insert(jobs)
-    .values({ userId: stylist.id, clientName, title, shootDate, callInDate, returnDate, status: "draft" })
+    .values({ workspaceId: stylist.workspaceId, clientName, title, shootDate, callInDate, returnDate, status: "draft" })
     .returning()
 
   await recordHuman(job.id, "job.created", { clientName, title, shootDate, callInDate, returnDate })
@@ -53,7 +53,7 @@ export async function publishJob(jobId: string): Promise<ActionResult> {
   const [job] = await db()
     .select()
     .from(jobs)
-    .where(and(eq(jobs.id, jobId), eq(jobs.userId, stylist.id)))
+    .where(and(eq(jobs.id, jobId), eq(jobs.workspaceId, stylist.workspaceId)))
     .limit(1)
   if (!job) return { ok: false, error: "Job not found." }
 
@@ -88,7 +88,7 @@ export async function updateLook(input: {
   const [job] = await db()
     .select()
     .from(jobs)
-    .where(and(eq(jobs.id, look.jobId), eq(jobs.userId, stylist.id)))
+    .where(and(eq(jobs.id, look.jobId), eq(jobs.workspaceId, stylist.workspaceId)))
     .limit(1)
   if (!job) return { ok: false, error: "Look not found." }
 
@@ -124,7 +124,7 @@ export async function setLookHidden(lookId: string, hidden: boolean): Promise<Ac
   const [job] = await db()
     .select()
     .from(jobs)
-    .where(and(eq(jobs.id, look.jobId), eq(jobs.userId, stylist.id)))
+    .where(and(eq(jobs.id, look.jobId), eq(jobs.workspaceId, stylist.workspaceId)))
     .limit(1)
   if (!job) return { ok: false, error: "Look not found." }
 
@@ -146,7 +146,7 @@ export async function sendClientLink(jobId: string, to: string): Promise<ActionR
   const [job] = await db()
     .select()
     .from(jobs)
-    .where(and(eq(jobs.id, jobId), eq(jobs.userId, stylist.id)))
+    .where(and(eq(jobs.id, jobId), eq(jobs.workspaceId, stylist.workspaceId)))
     .limit(1)
   if (!job) return { ok: false, error: "Job not found." }
   if (!job.publicToken) return { ok: false, error: "Publish the board before sending the link." }
@@ -259,7 +259,7 @@ export async function reopenReviewForm(form: FormData): Promise<void> {
   const [job] = await db()
     .select()
     .from(jobs)
-    .where(and(eq(jobs.id, jobId), eq(jobs.userId, stylist.id)))
+    .where(and(eq(jobs.id, jobId), eq(jobs.workspaceId, stylist.workspaceId)))
     .limit(1)
   if (!job) redirect(`/studio/jobs/${jobId}?error=${encodeURIComponent("Job not found.")}`)
   await db().update(jobs).set({ status: "published", reviewSubmittedAt: null }).where(eq(jobs.id, jobId))
@@ -288,7 +288,7 @@ export async function createSimpleJob(_prev: ActionResult | null, form: FormData
   const [job] = await db()
     .insert(jobs)
     .values({
-      userId: stylist.id,
+      workspaceId: stylist.workspaceId,
       clientName,
       clientEmail,
       title,

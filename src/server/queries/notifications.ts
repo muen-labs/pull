@@ -45,7 +45,7 @@ export async function unreadReviews(stylistId: string, limit = 10): Promise<Revi
     .from(jobs)
     .where(
       and(
-        eq(jobs.userId, stylistId),
+        eq(jobs.workspaceId, stylistId),
         isNotNull(jobs.reviewSubmittedAt),
         or(isNull(jobs.reviewSeenAt), lt(jobs.reviewSeenAt, jobs.reviewSubmittedAt)),
       ),

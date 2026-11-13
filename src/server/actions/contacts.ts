@@ -133,12 +133,12 @@ export async function importContactsCsvForm(): Promise<void> {
     const existing = await db()
       .select({ brand: contacts.brand, prMarket: contacts.prMarket })
       .from(contacts)
-      .where(eq(contacts.userId, stylist.id))
+      .where(eq(contacts.workspaceId, stylist.workspaceId))
     const known = new Set(existing.map((row) => contactKey(row.brand, row.prMarket)))
 
     for (const row of parsed.rows) {
       const values = {
-        userId: stylist.id,
+        workspaceId: stylist.workspaceId,
         brand: row.brand,
         prMarket: row.prMarket,
         emails: row.emails,
@@ -149,7 +149,7 @@ export async function importContactsCsvForm(): Promise<void> {
         .insert(contacts)
         .values(values)
         .onConflictDoUpdate({
-          target: [contacts.userId, contacts.brand, contacts.prMarket],
+          target: [contacts.workspaceId, contacts.brand, contacts.prMarket],
           set: {
             emails: values.emails,
             showroomAddress: values.showroomAddress,
@@ -203,7 +203,7 @@ export async function updateContactForm(form: FormData): Promise<void> {
   const [existing] = await db()
     .select({ id: contacts.id })
     .from(contacts)
-    .where(and(eq(contacts.id, id), eq(contacts.userId, stylist.id)))
+    .where(and(eq(contacts.id, id), eq(contacts.workspaceId, stylist.workspaceId)))
     .limit(1)
   if (!existing) back({ importError: "Contact not found." })
 
@@ -217,7 +217,7 @@ export async function updateContactForm(form: FormData): Promise<void> {
         showroomAddress: parsed.contact.showroomAddress,
         shipsOnOwnAccount: parsed.contact.shipsOnOwnAccount,
       })
-      .where(and(eq(contacts.id, id), eq(contacts.userId, stylist.id)))
+      .where(and(eq(contacts.id, id), eq(contacts.workspaceId, stylist.workspaceId)))
   } catch (error) {
     const code = (error as { code?: string }).code
     if (code === "23505") {
@@ -239,7 +239,7 @@ export async function deleteContactForm(form: FormData): Promise<void> {
   try {
     await db()
       .delete(contacts)
-      .where(and(eq(contacts.id, id), eq(contacts.userId, stylist.id)))
+      .where(and(eq(contacts.id, id), eq(contacts.workspaceId, stylist.workspaceId)))
   } catch (error) {
     console.error("[contacts] delete failed", error)
     back({ importError: "The contact could not be deleted." })
@@ -325,7 +325,7 @@ export async function seedDemoContactsForm(): Promise<void> {
   try {
     for (const demo of DEMO_CONTACTS) {
       const values = {
-        userId: stylist.id,
+        workspaceId: stylist.workspaceId,
         brand: demo.brand,
         prMarket: demo.prMarket,
         emails: [...demo.emails],
@@ -337,7 +337,7 @@ export async function seedDemoContactsForm(): Promise<void> {
         .insert(contacts)
         .values(values)
         .onConflictDoUpdate({
-          target: [contacts.userId, contacts.brand, contacts.prMarket],
+          target: [contacts.workspaceId, contacts.brand, contacts.prMarket],
           set: {
             emails: values.emails,
             showroomAddress: values.showroomAddress,

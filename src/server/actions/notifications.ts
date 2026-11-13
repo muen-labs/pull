@@ -26,7 +26,7 @@ export async function markReviewSeenForm(form: FormData): Promise<void> {
     await db()
       .update(jobs)
       .set({ reviewSeenAt: new Date() })
-      .where(and(eq(jobs.id, jobId), eq(jobs.userId, stylist.id)))
+      .where(and(eq(jobs.id, jobId), eq(jobs.workspaceId, stylist.workspaceId)))
   }
 
   refreshHeader()
@@ -41,7 +41,7 @@ export async function markAllReviewsSeenForm(): Promise<void> {
     .set({ reviewSeenAt: new Date() })
     .where(
       and(
-        eq(jobs.userId, stylist.id),
+        eq(jobs.workspaceId, stylist.workspaceId),
         or(isNull(jobs.reviewSeenAt), lt(jobs.reviewSeenAt, jobs.reviewSubmittedAt)),
       ),
     )
