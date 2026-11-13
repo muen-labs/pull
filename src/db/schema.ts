@@ -52,14 +52,64 @@ export const emailStatus = pgEnum("email_status", [
   "complained",
 ])
 
-/** The single stylist for the demo. */
+/**
+ * A stylist. Identity is Clerk's; this row is the stable uuid our tables join on, created lazily the
+ * first time someone signs in (`ensureUser` in src/lib/tenancy.ts). `clerk_user_id` is unique and
+ * nullable because a row can predate the Clerk account it belongs to.
+ */
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull().unique(),
+  /** Clerk's `user_…` id. The link between the identity provider and our row. */
+  clerkUserId: text("clerk_user_id").unique(),
   name: text("name"),
   studioAddress: jsonb("studio_address").$type<Record<string, string>>(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 })
+
+/**
+ * The tenant. One row per studio; every job hangs off one.
+ *
+ * `clerk_org_id` is the Clerk Organization this workspace mirrors — Clerk owns membership and
+ * invitations, this table owns the uuid the database joins on and the billing state Stripe will
+ * write. Nullable so a personal workspace exists before it is attached to an organization.
+ */
+export const workspaces = pgTable("workspaces", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  clerkOrgId: text("clerk_org_id").unique(),
+  /** The billing plan: `solo` | `studio` | `house` (PRODUCT.md pricing). */
+  plan: text("plan").notNull().default("solo"),
+  /** Seats = active memberships. Stripe's subscription quantity mirrors this. */
+  seatCount: integer("seat_count").notNull().default(1),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+})
+
+/**
+ * Who belongs to which workspace, and in what role.
+ *
+ * A mirror of Clerk's organization membership, not a source of truth: it exists so the database can
+ * answer "which workspace is this user working in" without a Clerk round trip on every query, and so
+ * a seat count can be read in SQL. One row per (workspace, user).
+ */
+export const memberships = pgTable(
+  "memberships",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id").notNull(),
+    userId: uuid("user_id").notNull(),
+    /** `owner` | `stylist`. Clerk's `org:admin` maps to owner. */
+    role: text("role").notNull().default("stylist"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("memberships_workspace_user_idx").on(t.workspaceId, t.userId),
+    index("memberships_user_idx").on(t.userId),
+  ],
+)
 
 export const boards = pgTable(
   "boards",
