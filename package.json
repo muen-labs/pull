@@ -28,6 +28,7 @@
     "agent:models": "node scripts/zoowork-models.mjs"
   },
   "dependencies": {
+    "@clerk/nextjs": "^7.9.26",
     "@neondatabase/serverless": "1.2.0",
     "@zoowork-ai/sdk": "^0.14.0",
     "class-variance-authority": "^0.7.1",

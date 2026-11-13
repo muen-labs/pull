@@ -1,3 +1,4 @@
+import { ClerkProvider } from "@clerk/nextjs"
 import type { Metadata } from "next"
 
 import { DemoGuide } from "@/components/DemoGuide"
@@ -22,8 +23,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
-        <DemoGuide />
-        {children}
+        <ClerkProvider>
+          <DemoGuide />
+          {children}
+        </ClerkProvider>
       </body>
     </html>
   )
