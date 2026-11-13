@@ -40,6 +40,9 @@
     "agent-board",
     "app",
     "design",
-    "tmp"
+    "tmp",
+    "agent",
+    ".agents",
+    ".claude"
   ]
 }
