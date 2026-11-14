@@ -32,6 +32,11 @@
   --radius-card: 20px; /* the kit's --card-radius */
   --radius-media: 16px; /* the kit's --card-media-radius */
 
+  /* The client's pen. Magenta, not the brand red: it has to stay readable on top of a photograph and
+     never be confused with a destructive state. Used by the markup dialog and read back by the
+     studio's bbox pass, so both sides agree on what "marked" means. */
+  --markup: #d4007a;
+
   /* The scrim over a photograph. White, because the house lifts an image toward the wall rather
      than blacking it down — which is also what keeps ink type legible on top of it. */
   --scrim: linear-gradient(

@@ -155,6 +155,49 @@ export default function LandingPage() {
         <ScreenCarousel steps={STEPS} />
       </section>
 
+      {/* The canvas — the surface the landing was missing: mock up the outfit, then try it on. */}
+      <section className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
+        <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-border pb-3">
+          <p className="text-[11px] tracking-[0.02em] text-muted-foreground">The canvas</p>
+          <p className="text-[11px] tracking-[0.02em] text-muted-foreground">
+            Mock-up, then try it on
+          </p>
+        </div>
+
+        <div className="mt-8 grid gap-10 md:grid-cols-[minmax(0,420px)_minmax(0,1fr)] md:items-start md:gap-14">
+          <div>
+            <h2 className="max-w-[16ch] text-[clamp(30px,3.6vw,44px)] font-semibold leading-[1] tracking-[-0.035em] text-foreground">
+              Mock up the outfit. Put it on the client.
+            </h2>
+            <p className="mt-4 max-w-[46ch] text-[15px] leading-relaxed text-muted-foreground">
+              Four references in — the client, the jacket, the top, the trousers. Draw a border on the
+              piece you want and the agent writes the prompt, then renders the look on the model. What
+              comes back can go straight onto the board for approval.
+            </p>
+            <div className="mt-6 flex flex-wrap items-center gap-2">
+              <Link href="/canvas" className="btn btn-ghost">
+                Open the canvas
+              </Link>
+            </div>
+          </div>
+
+          <div className="plate p-[14px]">
+            <div className="relative aspect-[640/380] overflow-hidden rounded-[16px] bg-muted">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/landing/demo-canvas.gif"
+                alt="The design canvas: four references feeding a compose card and a saved look"
+                className="absolute inset-0 h-full w-full object-cover object-top"
+                loading="lazy"
+              />
+            </div>
+            <p className="px-1 pt-3 font-mono text-[11px] tracking-[0.02em] text-muted-foreground">
+              The design canvas — references in, one look out
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* The agent, on the record. */}
       <section className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
         <div className="grid gap-10 border-t border-border pt-8 md:grid-cols-2 md:gap-16">

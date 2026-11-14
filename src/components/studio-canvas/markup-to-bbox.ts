@@ -1,7 +1,9 @@
 /**
  * Turn the client's pen into a box the stylist can edit.
  *
- * The client marks a look with freehand red strokes (`LookMarkupDialog`, ink `#b3261e` at 92%).
+ * The client marks a look with freehand strokes in the theme's `--markup` ink (magenta, `#d4007a`),
+ * so the reader below looks for magenta: a strong red with a blue channel well above green. The old
+ * red pen (#b3261e, blue below green) is no longer produced by any surface.
  * A studio reference needs geometry it can move and redraw, so the strokes are read back off the
  * markup image and reduced to their bounding box — the piece the client actually pointed at.
  */
@@ -35,7 +37,8 @@ export async function markupToBbox(markupDataUrl: string, maxSize = 640): Promis
         const b = data[index + 2]
         const a = data[index + 3]
         // The marker red, and only the marker red: a photo's own crimson must not qualify.
-        if (a > 120 && r > 140 && g < 110 && b < 100 && r - g > 80 && r - b > 90) {
+        // Magenta ink, not a warm photo highlight: red well above 140, green low, blue above green.
+        if (a > 120 && r > 140 && g < 120 && b > 60 && r > b + 60 && b > g + 40) {
           if (x < minX) minX = x
           if (y < minY) minY = y
           if (x > maxX) maxX = x
