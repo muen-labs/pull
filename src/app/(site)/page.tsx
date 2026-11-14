@@ -163,7 +163,7 @@ export default function LandingPage() {
   const strip = stripImages()
 
   return (
-    <main>
+    <main className="landing">
       <section className="mx-auto max-w-[1440px] px-6 pt-14 md:px-10 md:pt-20">
         <h1 className="mt-8 text-[clamp(52px,8.6vw,128px)] font-bold leading-[0.88] tracking-[-0.06em] text-foreground">
           From selects to confirmed looks.

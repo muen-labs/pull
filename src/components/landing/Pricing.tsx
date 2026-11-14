@@ -164,7 +164,7 @@ export function Pricing() {
         {PLANS.map((plan, index) => {
           const price = annual ? plan.annual : plan.monthly
           return (
-            <article key={plan.id} className="plate flex flex-col gap-5 p-[18px]">
+            <article key={plan.id} className="plate flex flex-col items-start gap-5 p-[18px]">
               {/* The action leads the card, as it does on the reference. */}
               {plan.cta === "start" ? (
                 <StartJobFlow kind="nav" />
@@ -187,7 +187,8 @@ export function Pricing() {
                 {String(index + 1).padStart(2, "0")}
               </p>
 
-              <div className="rounded-[16px] bg-muted p-4">
+              {/* The card's own content still fills it; only the action hugs its label. */}
+              <div className="w-full rounded-[16px] bg-muted p-4">
                 <p className="flex items-baseline gap-1.5 text-foreground">
                   <span
                     key={`${plan.id}-${annual ? "annual" : "monthly"}`}

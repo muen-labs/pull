@@ -203,6 +203,30 @@ color: var(--muted-foreground);
   .ai-dot { animation: none; opacity: 0.8; }
 }
 
+/* ── landing CTAs ─────────────────────────────────────────────────────────
+   On the landing every call to action is a white plate carrying the card's own shadow, so a button
+   reads as the same object as the plans and the screens. The ink stays on the label; the depth does
+   the work. Labels wrap rather than nowrap, because a long one in a narrow card must not overflow. */
+.landing .btn-primary,
+.landing .btn-ghost {
+  background: var(--plate);
+  color: var(--foreground);
+  border-color: var(--border);
+  box-shadow: var(--brandos-card-shadow);
+  white-space: normal;
+  text-align: center;
+}
+.landing .btn-primary:hover,
+.landing .btn-ghost:hover {
+  border-color: var(--input);
+  box-shadow: var(--brandos-card-shadow);
+}
+.landing .btn-primary:active,
+.landing .btn-ghost:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.06), inset 0 1px 0 #ffffff;
+}
+
 /* ── plate ────────────────────────────────────────────────────────────────
    The house card: a white surface on the wall, 16px corner, lifted by the kit's shadow. Named
    because the landing, the plans and the studio all use the same object. */
