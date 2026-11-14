@@ -50,15 +50,24 @@ export default clerkMiddleware(async (auth, request) => {
     }
   }
 
-  if (isStudioRoute(request)) {
-    // API routes answer in JSON; a redirect to the sign-in page would arrive at `fetch` as HTML and
-    // fail as a parse error rather than an auth error the client can handle.
+  if (isStudioRoute(request) && !(await signedIn())) {
+    // Explicit, not `auth.protect()`. protect() decides for itself whether the request is a document
+    // request; on Vercel's edge it classified these as non-document and answered 404 instead of
+    // redirecting — the studio disappeared in production while working locally. A redirect we build
+    // ourselves behaves the same everywhere, and keeps the return path.
     if (pathname.startsWith("/api/")) {
-      const { userId } = await auth()
-      if (!userId) return NextResponse.json({ error: "unauthenticated" }, { status: 401 })
-      return
+      // JSON for API routes: a redirect would reach `fetch` as HTML and read as a parse error.
+      return NextResponse.json({ error: "unauthenticated" }, { status: 401 })
     }
-    await auth.protect()
+    const signIn = new URL("/sign-in", request.url)
+    signIn.searchParams.set("redirect_url", request.url)
+    return NextResponse.redirect(signIn)
+  }
+
+  /** True when the session has a user. `auth()` is the proxy's session reader. */
+  async function signedIn(): Promise<boolean> {
+    const { userId } = await auth()
+    return Boolean(userId)
   }
 })
 
