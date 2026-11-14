@@ -18,12 +18,12 @@ export const clerkAppearance = {
     colorPrimary: "#0a0a0a", // ink: the action
     colorText: "#0a0a0a",
     colorTextSecondary: "#6b6b74",
-    colorBackground: "#ffffff",
-    colorInputBackground: "#ffffff",
+    colorBackground: "var(--plate)",
+    colorInputBackground: "var(--plate)",
     colorInputText: "#0a0a0a",
     colorBorder: "rgba(0, 0, 0, 0.08)",
-    colorRing: "#765898", // Muen purple, the focus ring
-    borderRadius: "10px",
+    colorRing: "#0a0a0a", // ink — the kit's focus ring in this theme
+    borderRadius: "20px",
     fontFamily: "var(--font-sans)",
     fontSize: "14px",
   },
@@ -35,16 +35,24 @@ export const clerkAppearance = {
     // The Muen plate: the kit's card material and 20px corner. Object form because Clerk's own
     // stylesheet sets a shadow with higher specificity.
     card: {
-      boxShadow: "var(--card-shadow)",
+      boxShadow: "var(--brandos-card-shadow)",
       border: "1px solid var(--border)",
       borderRadius: "20px",
-      backgroundColor: "var(--card)",
+      backgroundColor: "var(--plate)",
     },
     headerTitle: "text-[20px] font-medium tracking-[-0.02em] text-foreground",
     headerSubtitle: "text-[13px] text-muted-foreground",
     // 46px tall and square, matching `.btn` and `.btn-primary`.
-    formButtonPrimary:
-      "h-[46px] rounded-[10px] text-[14px] font-semibold normal-case tracking-normal hover:bg-[#1f1f1e]",
+    // The CTA is a pill, per the house. Object form: `borderRadius` above is a Clerk *variable*
+    // (20px, the card's corner) and a className cannot outweigh it, so the radius is stated here.
+    formButtonPrimary: {
+      height: "46px",
+      borderRadius: "999px",
+      fontSize: "14px",
+      fontWeight: 600,
+      textTransform: "none",
+      boxShadow: "none",
+    },
     formFieldLabel: "text-[11px] tracking-[0.02em] text-muted-foreground",
     formFieldInput: "h-[42px] text-[14px] shadow-none",
     socialButtonsBlockButton: "h-[42px] border-border shadow-none",

@@ -1,17 +1,22 @@
 @import "tailwindcss";
-@import "../styles/eva/theme.css";
-@import "../styles/muen-theme.css";
-@import "../styles/pull-theme.css";
+/* EVA is the kit; muen is the theme. Both come from the pinned package — the same files NERV, the
+   Muencollective site and Brand OS read — so a brand change lands here by updating the pin. */
+@import "@muen/eva/theme.css";
+@import "@muen/eva/themes/muen.css";
+/* The kit's classes live in dist; Tailwind v4 ignores node_modules unless told to scan them. */
+@source "../../node_modules/@muen/eva/dist";
+/* PULL-only names derived from kit tokens, then the deprecated-alias bridge. */
+@import "../styles/pull-extras.css";
 @import "../styles/pull-bridge.css";
 
 /* ---------------------------------------------------------------------------
    PULL — app sheets.
 
-   TOKENS live in src/styles/pull-theme.css (EVA contract: --background,
-   --card, --muted, --muted-foreground, --brand, --accent, --ring…). The kit's
-   @theme mapping is in src/styles/eva/theme.css, so Tailwind utilities exist:
-   bg-background · text-foreground · text-muted-foreground · text-brand ·
-   border-border · ring-ring · font-mono.
+   TOKENS come from EVA, pinned in package.json: @muen/eva/theme.css is the
+   contract and @muen/eva/themes/muen.css is the theme — the same files NERV, the
+   Muencollective site and Brand OS read. PULL adds only the names EVA lacks, in
+   src/styles/pull-extras.css. Tailwind utilities therefore exist: bg-background ·
+   text-foreground · text-muted-foreground · text-brand · border-border · ring-ring.
 
    The raw names still used below (--paper, --ink, --line, --ok, --mono, --r-*)
    are DEPRECATED aliases resolved by src/styles/pull-bridge.css. New rules
@@ -110,20 +115,19 @@ color: var(--muted-foreground);
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   height: 46px; padding: 0 22px;
-  border-radius: var(--radius);
+  border-radius: var(--radius-pill);
   border: 1px solid var(--border);
-  background: var(--card);
+  background: var(--plate);
   color: var(--foreground);
-  box-shadow: var(--embossed);
   font-size: 14px; font-weight: 600;
-  transition: box-shadow 160ms var(--ease), background 160ms var(--ease), transform 160ms var(--ease);
+  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
   white-space: nowrap;
 }
-.btn:hover { box-shadow: var(--embossed-hover); }
-.btn:active { box-shadow: var(--embossed-press); transform: translateY(1px); }
-.btn-primary { background: var(--primary); color: var(--primary-foreground); border-color: transparent; box-shadow: var(--embossed-ink); }
-.btn-primary:hover { background: #1f1f1e; box-shadow: var(--embossed-ink); }
-.btn-ghost { border-color: var(--border); color: var(--foreground); background: var(--card); }
+.btn:hover { border-color: var(--input); }
+.btn:active { transform: translateY(1px); }
+.btn-primary { background: var(--primary); color: var(--primary-foreground); border-color: transparent; }
+.btn-primary:hover { background: #1f1f1e; border-color: transparent; }
+.btn-ghost { border-color: var(--border); color: var(--foreground); background: var(--plate); }
 .btn-ghost:hover { border-color: var(--input); }
 .btn-sm { height: 38px; padding: 0 16px; font-size: 13px; }
 .btn-on-dark { background: var(--dark-text); color: var(--dark); }
@@ -159,10 +163,12 @@ color: var(--muted-foreground);
 /* The Muen plate: white on the wall, raised by the kit's seven-shadow stack with a 3px white
    inset along the top edge. A hairline stays for the edge, but the depth is what makes it a card. */
 .card {
-  background: var(--card);
+  /* EVA's `--card` is the wall's own grey ("the card IS the wall"); the white surface that reads as
+     a raised object is `--plate`. PULL's screens are forms and lists, so they take the plate. */
+  background: var(--plate);
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
-  box-shadow: var(--card-shadow);
+  box-shadow: var(--brandos-card-shadow);
   padding: 22px;
 }
 .card.dark { background: var(--dark-2); border-color: var(--dark-line); color: var(--dark-text); }

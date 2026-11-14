@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^7.9.26",
+    "@muen/eva": "github:muen-collective/eva#36a5b4f4ab5486f0f6e1f87ee81811960af8777b",
     "@neondatabase/serverless": "1.2.0",
     "@zoowork-ai/sdk": "^0.14.0",
     "class-variance-authority": "^0.7.1",

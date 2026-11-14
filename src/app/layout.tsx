@@ -8,7 +8,7 @@ import "./globals.css"
 
 /**
  * One face. Manrope, self-hosted through next/font — the same face the Muencollective site uses, and
- * the theme's only typeface (src/styles/muen-theme.css points --font-sans at this variable).
+ * the theme's only typeface (the EVA muen theme points --font-sans at this variable).
  */
 const manrope = Manrope({
   variable: "--font-manrope",

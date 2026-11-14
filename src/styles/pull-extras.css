@@ -1,0 +1,37 @@
+/*
+ * PULL's few tokens on top of EVA.
+ *
+ * Everything the Muen theme declares comes from the kit (`@muen/eva/theme.css` +
+ * `@muen/eva/themes/muen.css`), pinned in package.json to a commit — the same package NERV, the
+ * Muencollective site and Brand OS read. This file exists only for the names PULL's older sheets use
+ * and the kit does not declare, and every one of them is DERIVED from a kit token so a brand change
+ * still lands here without an edit.
+ *
+ * Do not add palette values to this file. If a colour is needed that EVA lacks, it belongs in the kit.
+ */
+
+[data-eva-theme="muen"] {
+  /* PULL's second text tier (eyebrows, meta, fine print). The kit has one muted tier, so this is
+     that value — the hierarchy is carried by size, weight and tracking instead of a lighter grey. */
+  --muted-foreground-soft: var(--muted-foreground);
+
+  /* The second ink, for a heading that sits under the primary one. */
+  --ink-soft: var(--secondary-foreground);
+
+  /* The dark lookbook material the client board is printed on. Fixed, never a "dark mode". */
+  --dark: #101010;
+  --dark-2: #171717;
+  --dark-text: #f4f4f4;
+  --dark-line: rgba(255, 255, 255, 0.14);
+  --dark-muted: #a8a8a8;
+  --dark-ok: #7bd39a;
+
+  /* Shape names PULL's sheets predate the kit's scale with; mapped, not re-valued. */
+  --radius-pill: 999px;
+  --radius-panel: var(--radius-xl);
+  --radius-card: 20px; /* the kit's --card-radius */
+  --radius-media: 16px; /* the kit's --card-media-radius */
+
+  /* Status name PULL's oldest components use. */
+  --ok: var(--success);
+}

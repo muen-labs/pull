@@ -4,7 +4,7 @@
  * This page exists to answer one question a token file cannot: does the theme
  * actually reach the primitives? Every swatch reads a live token and every
  * control below is a real EVA/shadcn primitive styled only by Tailwind
- * utilities that resolve through src/styles/pull-theme.css. If the mapping
+ * utilities that resolve through the EVA muen theme (@muen/eva). If the mapping
  * were broken, this page would render in Dark EVA's purple and black.
  *
  * It is also the review surface: designers see the palette, type scale and
@@ -129,7 +129,7 @@ export default function DesignPage() {
           EVA tokens, <span className="text-muted-foreground-soft">Pull values</span>
         </h1>
         <p className="mt-5 max-w-[620px] text-[17px] leading-relaxed text-muted-foreground">
-          The contract is <code className="font-mono text-[13px] text-brand">src/styles/pull-theme.css</code>{" "}
+          The contract is <code className="font-mono text-[13px] text-brand">@muen/eva/themes/muen.css</code>{" "}
           on the kit&apos;s shadcn vocabulary. Every colour below is a live token, and every control is a
           real primitive — no bespoke CSS in this page beyond layout.
         </p>
