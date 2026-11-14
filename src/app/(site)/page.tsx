@@ -3,7 +3,7 @@ import { join } from "node:path"
 import Link from "next/link"
 
 import { AgentTraceReel, type TraceRow } from "@/components/landing/AgentTraceReel"
-import type { HowStep } from "@/components/landing/HowItWorks"
+import { ScreenCarousel, type ScreenStep } from "@/components/landing/ScreenCarousel"
 import { Pricing } from "@/components/landing/Pricing"
 import { LookMarquee } from "@/components/LookMarquee"
 import { StartJobFlow } from "@/components/start-job/StartJobFlow"
@@ -33,14 +33,14 @@ function stripImages(): string[] {
   }
 }
 
-/** The three moves, each with the real screen it produces. */
-const STEPS: HowStep[] = [
+/** The three moves, each with the real screen it produces, recorded as a GIF from that route. */
+const STEPS: ScreenStep[] = [
   {
     n: "01",
     title: "Read the runway",
     body: "Drop the folder of screenshots. Pull trims the image, reads the look number and the season, and files every look under its brand.",
     label: "The board — every look, filed by house",
-    screen: "/landing/screen-board.png",
+    gif: "/landing/demo-board.gif",
     alt: "The board: looks grouped by house, one shortlisted, one in a hairline grid",
   },
   {
@@ -48,7 +48,7 @@ const STEPS: HowStep[] = [
     title: "Send one link",
     body: "Your client opens it with nothing to install and no account. They prioritize what they love and circle the pieces they actually want.",
     label: "The client's page — approve, pass, circle",
-    screen: "/landing/screen-client.png",
+    gif: "/landing/demo-client.gif",
     alt: "The client's page: looks approved, passed and circled with a red pen",
   },
   {
@@ -56,7 +56,7 @@ const STEPS: HowStep[] = [
     title: "Send the requests out",
     body: "The agent drafts emails per showroom with the approved looks and the shoot details. You approve it and it sends. Boxes, weights and labels follow the same board.",
     label: "Request emails — one per showroom, drafted",
-    screen: "/landing/screen-requests.png",
+    gif: "/landing/demo-requests.gif",
     alt: "Request emails: the agent's run, then one draft per house with the looks and shoot dates",
   },
 ]
@@ -152,26 +152,7 @@ export default function LandingPage() {
           Selects in. Requests out.
         </h2>
 
-        {/* The three moves, each as a plate card with its real screen inside. */}
-        <div className="mt-8 grid gap-5 md:grid-cols-3">
-          {STEPS.map((step) => (
-            <article key={step.n} className="plate flex flex-col gap-4 p-[18px]">
-              <p className="font-mono text-[11px] tracking-[0.02em] text-muted-foreground">
-                {step.n} · {step.title}
-              </p>
-              <p className="text-[13px] leading-relaxed text-muted-foreground">{step.body}</p>
-              <div className="relative mt-auto aspect-[16/10] overflow-hidden rounded-[16px] bg-muted">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={step.screen}
-                  alt={step.alt}
-                  className="absolute inset-0 h-full w-full object-cover object-top"
-                  loading="lazy"
-                />
-              </div>
-            </article>
-          ))}
-        </div>
+        <ScreenCarousel steps={STEPS} />
       </section>
 
       {/* The agent, on the record. */}
