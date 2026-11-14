@@ -1,76 +1,45 @@
-import { readFileSync } from "node:fs"
-import { join } from "node:path"
 import Link from "next/link"
 
-import { AgentTraceReel, type TraceRow } from "@/components/landing/AgentTraceReel"
-import { HowItWorks, type HowStep } from "@/components/landing/HowItWorks"
 import { Pricing } from "@/components/landing/Pricing"
-import { LookMarquee } from "@/components/LookMarquee"
 import { StartJobFlow } from "@/components/start-job/StartJobFlow"
 
-interface SuggestionRow {
-  file: string
-  brand: string
-}
+/**
+ * Landing — restyled to the Muen house reference (muencollective.com).
+ *
+ * The reference's structure, kept: a full-bleed photographic hero at 100svh with the wordmark over
+ * the image and one pill action; hairline-separated bands; a 36px/600 section heading at −0.03em with
+ * a 14px lede beneath it; the method as numbered plate rows that open in place; the plans as three
+ * cards with the action leading; then the closing band and a four-column footer.
+ *
+ * What is PULL's own: the copy, the runway photograph (a fixture look, not stock), the four acts the
+ * method describes, and the numbers on the plans.
+ */
 
-/** One look per house for the strip under the fold. */
-function stripImages(): string[] {
-  try {
-    const path = join(process.cwd(), "public", "fixtures", "menswear", "manifest.json")
-    const manifest = JSON.parse(readFileSync(path, "utf8")) as { assets?: SuggestionRow[] }
-    const seen = new Map<string, number>()
-    const picks: string[] = []
-    for (const row of manifest.assets ?? []) {
-      const used = seen.get(row.brand) ?? 0
-      if (used >= 2) continue // two per house keeps the loop varied
-      seen.set(row.brand, used + 1)
-      picks.push(`/fixtures/menswear/${encodeURIComponent(row.file)}`)
-      if (picks.length === 12) break
-    }
-    return picks
-  } catch {
-    return []
-  }
-}
-
-/** The three moves, each with the real screen it produces. */
-const STEPS: HowStep[] = [
+/** The four acts, in the order the studio performs them. */
+const METHOD = [
   {
     n: "01",
-    title: "Read the runway",
-    body: "Drop the folder of screenshots. Pull trims the image, reads the look number and the season, and files every look under its brand.",
-    label: "The board — every look, filed by house",
-    screen: "/landing/screen-board.png",
-    alt: "The board: looks grouped by house, one shortlisted, one in a hairline grid",
+    title: "The looks come in.",
+    body: "Drop the folder of screenshots. Pull trims the chrome, reads the look number and the season, and files every look under its house — no spreadsheet, no renaming.",
   },
   {
     n: "02",
-    title: "Send one link",
-    body: "Your client opens it with nothing to install and no account. They prioritize what they love and circle the pieces they actually want.",
-    label: "The client's page — approve, pass, circle",
-    screen: "/landing/screen-client.png",
-    alt: "The client's page: looks approved, passed and circled with a red pen",
+    title: "The board is built.",
+    body: "Each house gets a row of five, with the rest of the collection held in reserve. Delete a look and the row refills from the same house instead of going short.",
   },
   {
     n: "03",
-    title: "Send the requests out",
-    body: "The agent drafts emails per showroom with the approved looks and the shoot details. You approve it and it sends. Boxes, weights and labels follow the same board.",
-    label: "Request emails — one per showroom, drafted",
-    screen: "/landing/screen-requests.png",
-    alt: "Request emails: the agent's run, then one draft per house with the looks and shoot dates",
+    title: "The client decides.",
+    body: "One link, nothing to install, no account. They approve, pass, and circle the pieces they want. Their pen becomes a layer on the board, not a reply in your inbox.",
+  },
+  {
+    n: "04",
+    title: "The requests go out.",
+    body: "The agent drafts one email per showroom from the approved looks and the shoot dates. You approve it and it sends. Boxes, weights and labels follow the same board.",
   },
 ]
 
-/** Real tool names and durations, as they appear on /trace. */
-const TRACE: TraceRow[] = [
-  { tool: "cloudinary.trim", note: "look 27 · border trimmed", ms: 182 },
-  { tool: "tesseract.read", note: "CELINE · LOOK 27 · AW26", ms: 941 },
-  { tool: "parse.look", note: "brand CELINE · look 27 · AW26", ms: 3 },
-  { tool: "agent.draft", note: "CELINE · look 27", ms: 1204 },
-  { tool: "resend.send", note: "CELINE · pr@celine.demo", ms: 312 },
-]
-
-const FAQ = [
+const QUESTIONS = [
   {
     q: "Do my clients need an account?",
     a: "No. The link is the board — nothing to install, nothing to log in to. Showrooms work the same way: a link, not a login.",
@@ -89,131 +58,114 @@ const FAQ = [
   },
 ]
 
-const FOOTER_LINKS = [
-  { label: "Board", href: "/board" },
-  { label: "Client page", href: "/client" },
-  { label: "Request emails", href: "/requests" },
-  { label: "Agent trace", href: "/trace" },
-]
+const HERO = "/fixtures/menswear/louis_vuitton_look_5_aw26.jpg"
 
-/**
- * Landing — the product page.
- *
- * Visual direction: vende.framer.media for the type (a display scale that runs
- * past 120px, tight negative tracking, near-black on near-white, one accent) and
- * Dover Street Market for the density (full-bleed image band, hairline rules,
- * small labels doing the quiet work). The screens in `public/landing` are the
- * real ones, captured at 1440 — evidence, not illustration.
- *
- * Written for the productised app, not the hackathon demo: plans, seats, and the
- * client/showroom links as the story.
- */
+/** A plate row that opens in place — the reference's method list, as a `<details>` so it needs no JS. */
+function Row({ n, title, body }: { n?: string; title: string; body: string }) {
+  return (
+    <details className="group plate overflow-hidden">
+      <summary className="flex cursor-pointer list-none items-center gap-4 px-[18px] py-[15px] [&::-webkit-details-marker]:hidden">
+        {n ? (
+          <span className="font-mono text-[11px] tracking-[0.02em] text-muted-foreground">{n}</span>
+        ) : null}
+        <span className="text-[16px] font-medium leading-snug text-foreground">{title}</span>
+        <span className="ml-auto text-[16px] leading-none text-muted-foreground group-open:hidden">+</span>
+        <span className="ml-auto hidden text-[16px] leading-none text-muted-foreground group-open:block">
+          ×
+        </span>
+      </summary>
+      <p className="px-[18px] pb-[16px] text-[14px] leading-[1.65] text-muted-foreground md:pl-[52px]">
+        {body}
+      </p>
+    </details>
+  )
+}
+
 export default function LandingPage() {
-  const strip = stripImages()
-
   return (
     <main>
-      <section className="mx-auto max-w-[1440px] px-6 pt-14 md:px-10 md:pt-20">
-        <h1 className="mt-8 text-[clamp(52px,8.6vw,128px)] font-bold leading-[0.88] tracking-[-0.06em] text-foreground">
-          From selects to confirmed looks.
-        </h1>
+      {/* Hero — the photograph is the argument; the chrome is the wordmark and one pill. */}
+      <section className="relative h-[calc(100svh-64px)] min-h-[560px] overflow-hidden bg-foreground">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={HERO}
+          alt="A look from the Louis Vuitton autumn collection on the runway"
+          className="absolute inset-0 h-full w-full object-cover object-top"
+        />
+        {/* A scrim only where type sits: the photograph stays the colour, the corners carry ink. */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-black/45" />
 
-        {/* The action sits above the rule; the rule introduces the note. */}
-        <div className="mt-10">
-          <StartJobFlow kind="hero" />
-        </div>
-
-        <div className="mt-10 border-t border-border pt-6">
-          <p className="max-w-[440px] text-[15px] leading-relaxed text-muted-foreground">
-            Pull. guides you through the entire process of prep. It reads every look, builds styling
-            boards, and sends off for client approval — then turns those approvals into pre-styled
-            mockups, showroom requests, and shipping labels.
-          </p>
-        </div>
-      </section>
-
-      {/* Endless strip: the clothes are the argument, the chrome is hairline.
-          Grab it and slide it; the side gutters are blur filters pinned over the
-          band, not empty margins — a look leaves the frame out of focus. */}
-      {strip.length ? (
-        <LookMarquee srcs={strip} className="mt-16 border-t border-border md:mt-24" />
-      ) : null}
-
-      {/* How it works, with the screens moving. */}
-      <section className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
-        <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-border pb-3">
-          <p className="text-[11px] tracking-[0.02em] text-muted-foreground">How it works</p>
-          <p className="text-[11px] tracking-[0.02em] text-muted-foreground">
-            Three moves, one board
-          </p>
-        </div>
-
-        <h2 className="mt-8 max-w-[16ch] text-[clamp(32px,4.6vw,64px)] font-semibold leading-[0.95] tracking-[-0.04em] text-foreground">
-          Selects in. Requests out.
-        </h2>
-
-        <HowItWorks steps={STEPS} />
-      </section>
-
-      {/* The agent, on the record. */}
-      <section className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
-        <div className="grid gap-10 border-t border-border pt-8 md:grid-cols-2 md:gap-16">
-          <div>
-            <p className="text-[11px] tracking-[0.02em] text-muted-foreground">The agent</p>
-            <h2 className="mt-5 max-w-[14ch] text-[clamp(28px,3.6vw,48px)] font-semibold leading-[1] tracking-[-0.035em] text-foreground">
-              A pipeline, not a chat.
-            </h2>
-            <p className="mt-4 max-w-[44ch] text-[15px] leading-relaxed text-muted-foreground">
-              Every step the agent takes is a named tool call with its arguments, its result and how
-              long it took — visible while it runs, and kept afterwards. The agent drafts; you approve;
-              then it sends.
+        <div className="relative flex h-full flex-col justify-between p-6 md:p-10">
+          <div className="flex items-start justify-between gap-6">
+            <p className="font-mono text-[11px] tracking-[0.06em] text-white/80">
+              Selects in · Requests out
+            </p>
+            <p className="font-mono text-[11px] tracking-[0.06em] text-white/70">
+              A styling studio · New York
             </p>
           </div>
 
-          <div className="self-start">
-            <AgentTraceReel rows={TRACE} />
+          <div className="flex flex-wrap items-end justify-between gap-6">
+            <h1 className="max-w-[18ch] text-[clamp(32px,4.2vw,56px)] font-medium leading-[1.02] tracking-[-0.035em] text-white">
+              From selects to confirmed looks.
+            </h1>
+            <StartJobFlow kind="hero" />
           </div>
         </div>
       </section>
 
-      {/* Plans. */}
-      <section className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
-        <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-border pb-3">
-          <p className="text-[11px] tracking-[0.02em] text-muted-foreground">Plans</p>
-          <p className="text-[11px] tracking-[0.02em] text-muted-foreground">Cancel any time</p>
+      {/* The method. */}
+      <section className="border-b border-border">
+        <div className="mx-auto max-w-[1440px] px-6 py-16 md:px-10 md:py-20">
+          <h2 className="text-[36px] font-semibold leading-[1.05] tracking-[-0.03em] text-foreground">
+            The Pull method.
+          </h2>
+          <p className="mt-3 max-w-[62ch] text-[14px] leading-[1.65] text-muted-foreground">
+            Four acts, one board. The work that used to live in folders, screenshots and a chain of
+            replies runs in a single record — and every step the agent takes is written down.
+          </p>
+
+          <div className="mt-8 flex max-w-[760px] flex-col gap-2">
+            {METHOD.map((row) => (
+              <Row key={row.n} n={row.n} title={row.title} body={row.body} />
+            ))}
+          </div>
         </div>
-
-        <h2 className="mt-8 max-w-[18ch] text-[clamp(32px,4.6vw,64px)] font-semibold leading-[0.95] tracking-[-0.04em] text-foreground">
-          Priced per stylist.
-        </h2>
-
-        <Pricing />
       </section>
 
-      {/* Questions. */}
-      <section className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
-        <div className="border-b border-border pb-3">
-          <p className="text-[11px] tracking-[0.02em] text-muted-foreground">Questions</p>
-        </div>
+      {/* The plans, as cards. */}
+      <section className="border-b border-border">
+        <div className="mx-auto max-w-[1440px] px-6 py-16 md:px-10 md:py-20">
+          <h2 className="text-[36px] font-semibold leading-[1.05] tracking-[-0.03em] text-foreground">
+            Three ways in.
+          </h2>
+          <p className="mt-3 max-w-[62ch] text-[14px] leading-[1.65] text-muted-foreground">
+            Solo, Studio and House. One seat is one stylist who signs in — the client link and the
+            showroom link are free and always will be.
+          </p>
 
-        <div className="mt-8 grid gap-x-16 gap-y-8 md:grid-cols-2">
-          {FAQ.map((item) => (
-            <div key={item.q} className="border-t border-border pt-4">
-              <h3 className="text-[16px] font-medium leading-snug tracking-[-0.01em] text-foreground">
-                {item.q}
-              </h3>
-              <p className="mt-2 max-w-[52ch] text-[14px] leading-relaxed text-muted-foreground">
-                {item.a}
-              </p>
-            </div>
-          ))}
+          <Pricing />
+        </div>
+      </section>
+
+      {/* Questions — the same open-in-place rows. */}
+      <section className="border-b border-border">
+        <div className="mx-auto max-w-[1440px] px-6 py-16 md:px-10 md:py-20">
+          <h2 className="text-[36px] font-semibold leading-[1.05] tracking-[-0.03em] text-foreground">
+            Questions.
+          </h2>
+          <div className="mt-8 flex max-w-[760px] flex-col gap-2">
+            {QUESTIONS.map((item) => (
+              <Row key={item.q} title={item.q} body={item.a} />
+            ))}
+          </div>
         </div>
       </section>
 
       {/* Close. */}
-      <section className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
-        <div className="flex flex-wrap items-end justify-between gap-8 border-t border-border pt-8">
-          <h2 className="max-w-[16ch] text-[clamp(34px,5vw,72px)] font-semibold leading-[0.95] tracking-[-0.04em] text-foreground">
+      <section className="border-b border-border">
+        <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-6 px-6 py-16 md:px-10">
+          <h2 className="max-w-[24ch] text-[36px] font-semibold leading-[1.05] tracking-[-0.03em] text-foreground">
             Start with a folder of screenshots.
           </h2>
           <div className="flex flex-wrap items-center gap-2">
@@ -225,24 +177,59 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <footer className="mx-auto mt-20 flex max-w-[1440px] flex-wrap items-end justify-between gap-6 border-t border-border px-6 py-10 md:px-10">
-        <div className="flex flex-col gap-2">
-          <p className="text-[11px] tracking-[0.02em] text-muted-foreground">
-            Real labels · Real email · No client login
-          </p>
-          <nav aria-label="The product" className="flex flex-wrap gap-x-4 gap-y-1">
-            {FOOTER_LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="text-[11px] tracking-[0.02em] text-foreground hover:text-muted-foreground"
-              >
+      {/* Footer — four columns, as the reference. */}
+      <footer className="mx-auto max-w-[1440px] px-6 py-12 md:px-10">
+        <div className="grid gap-10 md:grid-cols-4">
+          <div>
+            <p className="text-[16px] font-semibold tracking-[-0.01em] text-foreground">Pull.</p>
+            <p className="mt-2 max-w-[34ch] text-[13px] leading-relaxed text-muted-foreground">
+              A styling studio for the whole prep loop: screenshots in, boards out, requests sent.
+            </p>
+          </div>
+
+          <nav aria-label="The product" className="flex flex-col gap-2">
+            <p className="font-mono text-[11px] tracking-[0.02em] text-muted-foreground">Studio</p>
+            {[
+              { label: "Board", href: "/board" },
+              { label: "Client page", href: "/client" },
+              { label: "Request emails", href: "/requests" },
+            ].map((link) => (
+              <Link key={link.href} href={link.href} className="text-[13px] text-foreground hover:text-muted-foreground">
                 {link.label}
               </Link>
             ))}
           </nav>
+
+          <nav aria-label="The record" className="flex flex-col gap-2">
+            <p className="font-mono text-[11px] tracking-[0.02em] text-muted-foreground">Record</p>
+            {[
+              { label: "Agent trace", href: "/trace" },
+              { label: "The system", href: "/design" },
+              { label: "How it is wired", href: "/setup" },
+            ].map((link) => (
+              <Link key={link.href} href={link.href} className="text-[13px] text-foreground hover:text-muted-foreground">
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="flex flex-col gap-2">
+            <p className="font-mono text-[11px] tracking-[0.02em] text-muted-foreground">Elsewhere</p>
+            <Link href="/sign-in" className="text-[13px] text-foreground hover:text-muted-foreground">
+              Sign in
+            </Link>
+            <a
+              href="mailto:studio@muencollective.com"
+              className="text-[13px] text-foreground hover:text-muted-foreground"
+            >
+              Email
+            </a>
+          </div>
         </div>
-        <p className="text-[11px] tracking-[0.02em] text-muted-foreground">New York</p>
+
+        <p className="mt-12 font-mono text-[11px] tracking-[0.02em] text-muted-foreground">
+          © 2026 Muen Collective
+        </p>
       </footer>
     </main>
   )

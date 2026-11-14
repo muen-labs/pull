@@ -88,9 +88,12 @@ function actFor(pathname: string): number {
  * `top: 0`, so the guide sat directly above it and read as part of the chrome.
  */
 const HIDDEN_PREFIXES = ["/sign-in", "/sign-up", "/login", "/setup", "/design", "/trace", "/studio"]
+/** The marketing landing: the guide narrates the acts, this page argues the product. */
+const HIDDEN_EXACT = ["/"]
 
 export function DemoGuide() {
   const pathname = usePathname()
+  if (HIDDEN_EXACT.includes(pathname)) return null
   if (HIDDEN_PREFIXES.some((prefix) => pathname.startsWith(prefix))) return null
   const [collapsed, setCollapsed] = useState(false)
 
