@@ -1,3 +1,4 @@
+import Image from "next/image"
 import Link from "next/link"
 
 import { Pricing } from "@/components/landing/Pricing"
@@ -36,6 +37,37 @@ const METHOD = [
     n: "04",
     title: "The requests go out.",
     body: "The agent drafts one email per showroom from the approved looks and the shoot dates. You approve it and it sends. Boxes, weights and labels follow the same board.",
+  },
+]
+
+/**
+ * The real product screens, as cards. Each one is a 1440-wide capture of the shipped route — evidence,
+ * not illustration — sitting in the same plate as the plans, with the media panel the house uses.
+ */
+const SCREENS = [
+  {
+    n: "01",
+    label: "The board",
+    title: "Every look, filed by house.",
+    body: "Five to a row, the rest of the collection held behind it. Remove a look and the row refills from the same house.",
+    src: "/landing/screen-board.png",
+    alt: "The review board: looks grouped by house, one shortlisted with a tick",
+  },
+  {
+    n: "02",
+    label: "The client link",
+    title: "One link, no account.",
+    body: "The client approves, passes and circles the pieces they want. Their pen lands as a layer on the board.",
+    src: "/landing/screen-client.png",
+    alt: "The client's page: looks approved, passed, and one circled with a red pen",
+  },
+  {
+    n: "03",
+    label: "The requests",
+    title: "One email per showroom.",
+    body: "The agent drafts each request from the approved looks and the shoot dates. Nothing sends until you approve it.",
+    src: "/landing/screen-requests.png",
+    alt: "Request emails: the agent's run, then one draft per house with the looks and shoot dates",
   },
 ]
 
@@ -128,6 +160,45 @@ export default function LandingPage() {
           <div className="mt-8 flex max-w-[760px] flex-col gap-2">
             {METHOD.map((row) => (
               <Row key={row.n} n={row.n} title={row.title} body={row.body} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* The screens, as cards — the same plate as the plans, with the capture inside. */}
+      <section className="border-b border-border">
+        <div className="mx-auto max-w-[1440px] px-6 py-16 md:px-10 md:py-20">
+          <h2 className="text-[36px] font-semibold leading-[1.05] tracking-[-0.03em] text-foreground">
+            The screens.
+          </h2>
+          <p className="mt-3 max-w-[62ch] text-[14px] leading-[1.65] text-muted-foreground">
+            Three surfaces the studio actually works in, captured from the running app rather than
+            drawn for this page.
+          </p>
+
+          <div className="mt-8 grid gap-5 md:grid-cols-3">
+            {SCREENS.map((screen) => (
+              <article key={screen.n} className="plate flex flex-col gap-4 p-[18px]">
+                <p className="font-mono text-[11px] tracking-[0.02em] text-muted-foreground">
+                  {screen.n} · {screen.label}
+                </p>
+
+                <div>
+                  <h3 className="text-[16px] font-semibold leading-tight text-foreground">{screen.title}</h3>
+                  <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">{screen.body}</p>
+                </div>
+
+                {/* The capture sits in a debossed panel, as the reference treats card media. */}
+                <div className="relative mt-auto aspect-[16/10] overflow-hidden rounded-[16px] bg-muted">
+                  <Image
+                    src={screen.src}
+                    alt={screen.alt}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                    className="object-cover object-top"
+                  />
+                </div>
+              </article>
             ))}
           </div>
         </div>
