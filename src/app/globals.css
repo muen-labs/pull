@@ -217,27 +217,58 @@ color: var(--muted-foreground);
 }
 
 /* ── landing CTAs ─────────────────────────────────────────────────────────
-   On the landing every call to action is a white plate carrying the card's own shadow, so a button
-   reads as the same object as the plans and the screens. The ink stays on the label; the depth does
-   the work. Labels wrap rather than nowrap, because a long one in a narrow card must not overflow. */
-.landing .btn-primary,
-.landing .btn-ghost {
-  background: var(--plate);
+   The house CTA material, read off muencollective.com rather than guessed: the pill is NOT white.
+   It is the wall's own light tone (#f6f6f6) embossed by its shadow — a white inset on the top and
+   left edges, a dark inset on the bottom, and three soft outer casts. That emboss is what makes it
+   read as a button sitting on the surface instead of a white sticker on it.
+
+   Measured rest state: rim 28px, padding 14px 28px, 14px/500 with 0.14px tracking. On hover the
+   emboss softens and the outer casts deepen; nothing moves.
+*/
+.landing .btn {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 13px 26px;
+  background: #f6f6f6;
   color: var(--foreground);
-  border-color: var(--border);
-  box-shadow: var(--brandos-card-shadow);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.14px;
+  line-height: 1.2;
   white-space: normal;
   text-align: center;
+  box-shadow:
+    inset 1px 0 0 0 #ffffff,
+    inset 0 1px 0 0 #ffffff,
+    inset 0 2px 4px -2px rgb(255 255 255 / 0.65),
+    inset -1px 0 0 0 rgb(0 0 0 / 0.03),
+    inset 0 -1px 0 0 rgb(0 0 0 / 0.055),
+    inset 0 -3px 6px -5px rgb(0 0 0 / 0.06),
+    0 1px 2px -1px rgb(0 0 0 / 0.05),
+    0 4px 10px -8px rgb(0 0 0 / 0.09),
+    0 10px 20px -18px rgb(0 0 0 / 0.07);
+  transition:
+    box-shadow 0.24s,
+    background-color 0.2s,
+    border-color 0.2s;
 }
-.landing .btn-primary:hover,
-.landing .btn-ghost:hover {
-  border-color: var(--input);
-  box-shadow: var(--brandos-card-shadow);
+.landing .btn:hover {
+  background: #f6f6f6;
+  box-shadow:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.95),
+    inset 0 2px 3px -2px rgb(255 255 255 / 0.55),
+    inset 0 -1px 0 0 rgb(0 0 0 / 0.043),
+    inset 0 -3px 5px -4px rgb(0 0 0 / 0.06),
+    0 1px 2px -1px rgb(0 0 0 / 0.05),
+    0 6px 14px -10px rgb(0 0 0 / 0.1),
+    0 16px 28px -24px rgb(0 0 0 / 0.1);
 }
-.landing .btn-primary:active,
-.landing .btn-ghost:active {
-  transform: translateY(1px);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.06), inset 0 1px 0 #ffffff;
+.landing .btn:active {
+  box-shadow:
+    inset 0 1px 2px 0 rgb(0 0 0 / 0.07),
+    inset 0 -1px 0 0 rgb(255 255 255 / 0.8),
+    0 1px 1px -1px rgb(0 0 0 / 0.05);
+  transform: none;
 }
 
 /* ── plate ────────────────────────────────────────────────────────────────
