@@ -71,6 +71,15 @@ const SCREENS = [
   },
 ]
 
+/** The agent's real calls and durations, as /trace records them for one look. */
+const RUN = [
+  { tool: "cloudinary.trim", note: "look 27 · border trimmed", ms: 182 },
+  { tool: "tesseract.read", note: "CELINE · look 27 · AW26", ms: 941 },
+  { tool: "parse.look", note: "brand CELINE · look 27 · AW26", ms: 3 },
+  { tool: "agent.draft", note: "CELINE · look 27", ms: 1204 },
+  { tool: "resend.send", note: "CELINE · pr@celine.demo", ms: 312 },
+]
+
 const QUESTIONS = [
   {
     q: "Do my clients need an account?",
@@ -201,6 +210,59 @@ export default function LandingPage() {
               </article>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* The agent run, as one card: the calls it made, in order, with what each cost. */}
+      <section className="border-b border-border">
+        <div className="mx-auto max-w-[1440px] px-6 py-16 md:px-10 md:py-20">
+          <h2 className="text-[36px] font-semibold leading-[1.05] tracking-[-0.03em] text-foreground">
+            The agent, on the record.
+          </h2>
+          <p className="mt-3 max-w-[62ch] text-[14px] leading-[1.65] text-muted-foreground">
+            A pipeline, not a chat. Every step is a named tool call with its arguments, its result and
+            how long it took — visible while it runs, kept afterwards.
+          </p>
+
+          <article className="plate mt-8 max-w-[760px] overflow-hidden">
+            <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border px-5 py-3">
+              <p className="font-mono text-[11px] tracking-[0.02em] text-muted-foreground">
+                run · Dune Tour · look 27
+              </p>
+              <p className="font-mono text-[11px] tracking-[0.02em] text-muted-foreground">
+                {RUN.length} calls · {RUN.reduce((total, row) => total + row.ms, 0)} ms
+              </p>
+            </header>
+
+            <ol>
+              {RUN.map((row, index) => (
+                <li
+                  key={row.tool}
+                  className="flex items-center gap-4 border-b border-border px-5 py-3 last:border-b-0"
+                >
+                  <span className="w-4 shrink-0 font-mono text-[11px] text-muted-foreground">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-mono text-[12px] leading-tight text-foreground">{row.tool}</p>
+                    <p className="truncate text-[12px] leading-relaxed text-muted-foreground">{row.note}</p>
+                  </div>
+                  <span className="shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground">
+                    {row.ms} ms
+                  </span>
+                </li>
+              ))}
+            </ol>
+
+            <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-5 py-3">
+              <p className="text-[12px] text-muted-foreground">
+                Drafted by the agent. Approved by you. Then sent.
+              </p>
+              <Link href="/trace" className="font-mono text-[11px] tracking-[0.02em] text-brand">
+                See the whole trace →
+              </Link>
+            </footer>
+          </article>
         </div>
       </section>
 
