@@ -73,7 +73,9 @@ export function ScreenCarousel({ steps }: { steps: ScreenStep[] }) {
 
       {/* The card: one plate, the selected capture inside it. */}
       <div className="plate p-[14px]">
-        <div className="relative aspect-[640/380] overflow-hidden rounded-[16px] bg-muted">
+        {/* The box matches the clip exactly (560×312) and anchors to the top, so the app header is
+            never cropped off by `object-cover`. */}
+        <div className="relative aspect-[560/312] overflow-hidden rounded-[16px] bg-muted">
           {steps.map((item, index) => (
             // eslint-disable-next-line @next/next/no-img-element
             <img
