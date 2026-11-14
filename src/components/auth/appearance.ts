@@ -17,13 +17,13 @@ export const clerkAppearance = {
   variables: {
     colorPrimary: "#0a0a0a", // ink: the action
     colorText: "#0a0a0a",
-    colorTextSecondary: "#6b6a66",
+    colorTextSecondary: "#6b6b74",
     colorBackground: "#ffffff",
     colorInputBackground: "#ffffff",
     colorInputText: "#0a0a0a",
-    colorBorder: "#e6e3e3",
-    colorRing: "#465907", // olive, the focus ring
-    borderRadius: "0",
+    colorBorder: "rgba(0, 0, 0, 0.08)",
+    colorRing: "#765898", // Muen purple, the focus ring
+    borderRadius: "10px",
     fontFamily: "var(--font-sans)",
     fontSize: "14px",
   },
@@ -32,24 +32,26 @@ export const clerkAppearance = {
     cardBox: { width: "100%", boxShadow: "none" },
     // Clerk's own "Sign in to <app>" duplicates the headline we wrote on the left; one voice only.
     header: { display: "none" },
-    // A hairline sheet, not a floating card. An object rather than classes: the shadcn theme sets
-    // `box-shadow` and a translucent border with higher specificity, so `shadow-none` lost.
+    // The Muen plate: the kit's card material and 20px corner. Object form because Clerk's own
+    // stylesheet sets a shadow with higher specificity.
     card: {
-      boxShadow: "none",
+      boxShadow: "var(--card-shadow)",
       border: "1px solid var(--border)",
-      borderRadius: "0",
+      borderRadius: "20px",
       backgroundColor: "var(--card)",
     },
     headerTitle: "text-[20px] font-medium tracking-[-0.02em] text-foreground",
     headerSubtitle: "text-[13px] text-muted-foreground",
     // 46px tall and square, matching `.btn` and `.btn-primary`.
     formButtonPrimary:
-      "h-[46px] text-[14px] font-medium normal-case tracking-normal shadow-none hover:bg-[#1f1f1e]",
+      "h-[46px] rounded-[10px] text-[14px] font-semibold normal-case tracking-normal hover:bg-[#1f1f1e]",
     formFieldLabel: "text-[11px] tracking-[0.02em] text-muted-foreground",
     formFieldInput: "h-[42px] text-[14px] shadow-none",
     socialButtonsBlockButton: "h-[42px] border-border shadow-none",
     dividerLine: "bg-border",
     dividerText: "text-[11px] tracking-[0.02em] text-muted-foreground-soft",
+    // A caption under the plate: without the gap it reads as clipped by the card's shadow.
+    footer: { marginTop: "16px" },
     footerAction: "text-[13px]",
     footerActionLink: "text-brand font-medium hover:text-brand",
     identityPreviewText: "text-[13px]",

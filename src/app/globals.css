@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "../styles/eva/theme.css";
+@import "../styles/muen-theme.css";
 @import "../styles/pull-theme.css";
 @import "../styles/pull-bridge.css";
 
@@ -104,19 +105,26 @@ color: var(--muted-foreground);
 .nav-actions { display: flex; align-items: center; gap: 10px; }
 
 /* ── buttons ──────────────────────────────────────────────────────────── */
+/* Muen controls: a rounded, embossed plate. The 3D comes from the inset highlights in
+   `--embossed`, not from a heavy drop shadow — the kit's material, reused. */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   height: 46px; padding: 0 22px;
-  border-radius: 0; /* the references have no radius */
-  border: 1px solid transparent;
-  font-size: 14px; font-weight: 500;
-  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: var(--embossed);
+  font-size: 14px; font-weight: 600;
+  transition: box-shadow 160ms var(--ease), background 160ms var(--ease), transform 160ms var(--ease);
   white-space: nowrap;
 }
-.btn-primary { background: var(--ink); color: var(--paper); }
-.btn-primary:hover { background: #1f1f1e; }
-.btn-ghost { border-color: var(--line-strong); color: var(--ink); background: transparent; }
-.btn-ghost:hover { border-color: var(--ink); }
+.btn:hover { box-shadow: var(--embossed-hover); }
+.btn:active { box-shadow: var(--embossed-press); transform: translateY(1px); }
+.btn-primary { background: var(--primary); color: var(--primary-foreground); border-color: transparent; box-shadow: var(--embossed-ink); }
+.btn-primary:hover { background: #1f1f1e; box-shadow: var(--embossed-ink); }
+.btn-ghost { border-color: var(--border); color: var(--foreground); background: var(--card); }
+.btn-ghost:hover { border-color: var(--input); }
 .btn-sm { height: 38px; padding: 0 16px; font-size: 13px; }
 .btn-on-dark { background: var(--dark-text); color: var(--dark); }
 .btn-on-dark-ghost { border-color: var(--dark-line); color: var(--dark-text); background: transparent; }
@@ -148,7 +156,15 @@ color: var(--muted-foreground);
 .step p { margin: 0; color: var(--muted-foreground); font-size: 15px; }
 
 /* ── cards ────────────────────────────────────────────────────────────── */
-.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-md); padding: 22px; }
+/* The Muen plate: white on the wall, raised by the kit's seven-shadow stack with a 3px white
+   inset along the top edge. A hairline stays for the edge, but the depth is what makes it a card. */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--card-shadow);
+  padding: 22px;
+}
 .card.dark { background: var(--dark-2); border-color: var(--dark-line); color: var(--dark-text); }
 
 /* ══════════════════════════════════════════════════════════════════════════

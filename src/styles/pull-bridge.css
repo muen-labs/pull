@@ -20,6 +20,7 @@
  * last line is gone. Do not add new names to it.
  */
 
+[data-eva-theme="muen"],
 [data-eva-theme="pull"] {
   /* surfaces + text */
   --paper: var(--background);

@@ -230,11 +230,15 @@ for (const f of files) {
   for (const m of text.matchAll(/["'](--[a-z0-9-]+)["']\s*:/g)) defined.add(m[1])
 }
 
+// Tokens the framework supplies at runtime, so no file in src declares them:
+// `--font-manrope` is emitted by next/font on <html> (see app/layout.tsx).
+const runtimeProvided = new Set(["--font-manrope"])
+
 const dangling = []
 for (const f of files) {
   const text = read(f)
   for (const m of text.matchAll(/var\((--[a-z0-9-]+)/g)) {
-    if (!defined.has(m[1]) && !(m[1] in lightScope)) {
+    if (!defined.has(m[1]) && !runtimeProvided.has(m[1]) && !(m[1] in lightScope)) {
       dangling.push(`${f.replace(ROOT + "/", "")}: ${m[1]}`)
     }
   }
