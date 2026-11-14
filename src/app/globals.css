@@ -212,6 +212,14 @@ color: var(--muted-foreground);
   box-shadow: var(--brandos-card-shadow);
 }
 
+/* ── price tick ────────────────────────────────────────────────────────────
+   The plan price re-enters when the billing period changes: a short rise, no bounce. Motion-safe
+   only, so a reader who asked for less movement just gets the new number. */
+@keyframes price-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
 /* ── noodle beads ─────────────────────────────────────────────────────────
    The beads ride the reference→render wires with SMIL. Motion off, they are scenery that moves for no
    reason, so they go entirely: the wire still connects the two cards. */

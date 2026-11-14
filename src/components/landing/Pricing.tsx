@@ -11,7 +11,7 @@
  * Prices here are provisional: the shape is settled (Clerk accounts + a Stripe seat subscription), the
  * numbers are a proposal for the founder to confirm before this page ships. Annual is two months free.
  */
-import { useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Check } from "lucide-react"
 
 import { StartJobFlow } from "@/components/start-job/StartJobFlow"
@@ -79,26 +79,77 @@ const PLANS: Plan[] = [
 export function Pricing() {
   const [annual, setAnnual] = useState(false)
 
+  /**
+   * The thumb is sized and placed from the active button, not from a 50/50 split: "Monthly" and
+   * "Annual · two months free" are different widths, and a fixed half would either overhang or fall
+   * short. Measuring also keeps it honest when the control wraps on a narrow screen.
+   */
+  const trackRef = useRef<HTMLDivElement | null>(null)
+  const monthRef = useRef<HTMLButtonElement | null>(null)
+  const annualRef = useRef<HTMLButtonElement | null>(null)
+  const [thumb, setThumb] = useState<{ left: number; width: number } | null>(null)
+
+  const measure = useCallback(() => {
+    const track = trackRef.current
+    const active = annual ? annualRef.current : monthRef.current
+    if (!track || !active) return
+    const t = track.getBoundingClientRect()
+    const a = active.getBoundingClientRect()
+    setThumb({ left: a.left - t.left, width: a.width })
+  }, [annual])
+
+  useEffect(() => {
+    measure()
+    const observer = new ResizeObserver(measure)
+    if (trackRef.current) observer.observe(trackRef.current)
+    window.addEventListener("resize", measure)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener("resize", measure)
+    }
+  }, [measure])
+
   return (
     <div>
       <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-1 rounded-full border border-border bg-[var(--plate)] p-1">
+        <div
+          ref={trackRef}
+          role="group"
+          aria-label="Billing period"
+          className="relative flex items-center gap-1 rounded-full p-1"
+          style={{ background: "var(--segmented-track)" }}
+        >
+          {/* The travelling pill: it carries the ink, so the active option is a shape and not a swap. */}
+          {thumb ? (
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-y-1 rounded-full bg-[var(--segmented-thumb)] transition-[left,width] duration-300 ease-out motion-reduce:transition-none"
+              style={{
+                left: thumb.left,
+                width: thumb.width,
+                boxShadow: "0 1px 2px rgb(0 0 0 / 0.08), inset 0 1px 0 #ffffff",
+              }}
+            />
+          ) : null}
+
           <button
+            ref={monthRef}
             type="button"
             onClick={() => setAnnual(false)}
             aria-pressed={!annual}
-            className={`rounded-full px-4 py-1.5 text-[13px] transition-colors ${
-              annual ? "text-muted-foreground" : "bg-foreground text-[var(--plate)]"
+            className={`relative z-10 rounded-full px-4 py-1.5 text-[13px] transition-colors duration-200 ${
+              annual ? "text-muted-foreground" : "text-foreground"
             }`}
           >
             Monthly
           </button>
           <button
+            ref={annualRef}
             type="button"
             onClick={() => setAnnual(true)}
             aria-pressed={annual}
-            className={`rounded-full px-4 py-1.5 text-[13px] transition-colors ${
-              annual ? "bg-foreground text-[var(--plate)]" : "text-muted-foreground"
+            className={`relative z-10 rounded-full px-4 py-1.5 text-[13px] transition-colors duration-200 ${
+              annual ? "text-foreground" : "text-muted-foreground"
             }`}
           >
             Annual · two months free
@@ -138,7 +189,10 @@ export function Pricing() {
 
               <div className="rounded-[16px] bg-muted p-4">
                 <p className="flex items-baseline gap-1.5 text-foreground">
-                  <span className="text-[22px] font-semibold leading-none tracking-[-0.02em]">
+                  <span
+                    key={`${plan.id}-${annual ? "annual" : "monthly"}`}
+                    className="text-[22px] font-semibold leading-none tracking-[-0.02em] motion-safe:animate-[price-in_240ms_ease-out]"
+                  >
                     {price === null ? "Talk to us" : `$${price}`}
                   </span>
                   {price !== null ? (
