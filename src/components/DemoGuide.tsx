@@ -82,10 +82,12 @@ function actFor(pathname: string): number {
 }
 
 /**
- * Surfaces the guide must not appear on: the auth screens and the dev pages. It narrates the three
- * acts, so on a sign-in screen it is somebody else's show.
+ * Surfaces the guide must not appear on: the auth screens, the dev pages, and the studio.
+ *
+ * The studio is the product's working surface, not an act of the demo — and its header is sticky at
+ * `top: 0`, so the guide sat directly above it and read as part of the chrome.
  */
-const HIDDEN_PREFIXES = ["/sign-in", "/sign-up", "/login", "/setup", "/design", "/trace"]
+const HIDDEN_PREFIXES = ["/sign-in", "/sign-up", "/login", "/setup", "/design", "/trace", "/studio"]
 
 export function DemoGuide() {
   const pathname = usePathname()
