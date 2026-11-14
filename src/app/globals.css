@@ -208,7 +208,7 @@ color: var(--muted-foreground);
    because the landing, the plans and the studio all use the same object. */
 .plate {
   background: var(--plate);
-  border-radius: 16px;
+  border-radius: 24px;
   box-shadow: var(--brandos-card-shadow);
 }
 
@@ -270,7 +270,7 @@ color: var(--muted-foreground);
      a raised object is `--plate`. PULL's screens are forms and lists, so they take the plate. */
   background: var(--plate);
   border: 1px solid var(--border);
-  border-radius: var(--radius-card);
+  border-radius: 24px;
   box-shadow: var(--brandos-card-shadow);
   padding: 22px;
 }

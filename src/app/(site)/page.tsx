@@ -59,6 +59,27 @@ const STEPS: ScreenStep[] = [
     gif: "/landing/demo-requests.gif",
     alt: "Request emails: the agent's run, then one draft per house with the looks and shoot dates",
   },
+  {
+    n: "04",
+    title: "The showroom sends it back",
+    body: "The showroom opens the same kind of link, enters the parcel and the pickup, and the courier options come back priced. The prepaid label returns to the studio — nothing is bought from their side.",
+    label: "The showroom — parcel, pickup, prepaid label",
+    gif: "/landing/demo-intake.gif",
+    alt: "The showroom intake: the label request, the parcel, and the pickup details",
+  },
+]
+
+/**
+ * The references the canvas starts from, and the look it rendered on production.
+ *
+ * `final-look.jpg` is a real gpt-image-2 output captured from /canvas (a 1024² render), not a
+ * mock-up: the client on the left is worn through the jacket, top and trousers that follow.
+ */
+const CANVAS_REFS = [
+  { name: "ref 1 · the client", src: "/fixtures/canvas/client-timothee-square.jpg", alt: "The client's portrait", marked: false },
+  { name: "ref 2 · the jacket", src: "/fixtures/menswear/prada_look_1_aw26.jpg", alt: "The jacket, with the client's mark around it", marked: true },
+  { name: "ref 3 · the top", src: "/fixtures/menswear/dior_homme_look_1_aw26.jpg", alt: "The top underneath", marked: false },
+  { name: "ref 4 · the trousers", src: "/fixtures/menswear/louis_vuitton_look_4_aw26.jpg", alt: "The trousers", marked: false },
 ]
 
 /** Real tool names and durations, as they appear on /trace. */
@@ -144,7 +165,7 @@ export default function LandingPage() {
         <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-border pb-3">
           <p className="text-[11px] tracking-[0.02em] text-muted-foreground">How it works</p>
           <p className="text-[11px] tracking-[0.02em] text-muted-foreground">
-            Three moves, one board
+            Four moves, one record
           </p>
         </div>
 
@@ -155,24 +176,22 @@ export default function LandingPage() {
         <ScreenCarousel steps={STEPS} />
       </section>
 
-      {/* The canvas — the surface the landing was missing: mock up the outfit, then try it on. */}
+      {/* The canvas: the marked references in, one large final card out. */}
       <section className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
         <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-border pb-3">
           <p className="text-[11px] tracking-[0.02em] text-muted-foreground">The canvas</p>
-          <p className="text-[11px] tracking-[0.02em] text-muted-foreground">
-            Mock-up, then try it on
-          </p>
+          <p className="text-[11px] tracking-[0.02em] text-muted-foreground">Mock-up, then try it on</p>
         </div>
 
-        <div className="mt-8 grid gap-10 md:grid-cols-[minmax(0,420px)_minmax(0,1fr)] md:items-start md:gap-14">
+        <div className="mt-8 grid gap-10 md:grid-cols-[minmax(0,380px)_minmax(0,1fr)] md:items-start md:gap-14">
           <div>
             <h2 className="max-w-[16ch] text-[clamp(30px,3.6vw,44px)] font-semibold leading-[1] tracking-[-0.035em] text-foreground">
               Mock up the outfit. Put it on the client.
             </h2>
             <p className="mt-4 max-w-[46ch] text-[15px] leading-relaxed text-muted-foreground">
-              Four references in — the client, the jacket, the top, the trousers. Draw a border on the
-              piece you want and the agent writes the prompt, then renders the look on the model. What
-              comes back can go straight onto the board for approval.
+              Four references in — the client, the jacket, the top, the trousers. Ring the piece you
+              want and the agent writes the prompt, then renders the look on the model. The render
+              below is one this canvas actually produced.
             </p>
             <div className="mt-6 flex flex-wrap items-center gap-2">
               <Link href="/canvas" className="btn btn-ghost">
@@ -181,19 +200,61 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="plate p-[14px]">
-            <div className="relative aspect-[640/380] overflow-hidden rounded-[16px] bg-muted">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/landing/demo-canvas.gif"
-                alt="The design canvas: four references feeding a compose card and a saved look"
-                className="absolute inset-0 h-full w-full object-cover object-top"
-                loading="lazy"
-              />
+          <div>
+            {/* The references, the marked one carrying the client's pen. */}
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {CANVAS_REFS.map((ref) => (
+                <figure key={ref.name} className="plate p-2">
+                  <div className="relative aspect-[3/4] overflow-hidden rounded-[12px] bg-muted">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={ref.src}
+                      alt={ref.alt}
+                      className="h-full w-full object-cover object-top"
+                      loading="lazy"
+                    />
+                    {ref.marked ? (
+                      <span
+                        aria-hidden
+                        className="pointer-events-none absolute inset-[6px] rounded-[10px] border-2"
+                        style={{ borderColor: "var(--markup)" }}
+                      />
+                    ) : null}
+                  </div>
+                  <figcaption className="flex items-center justify-between gap-1 px-0.5 pt-2">
+                    <span className="truncate font-mono text-[10px] tracking-[0.02em] text-muted-foreground">
+                      {ref.name}
+                    </span>
+                    {ref.marked ? (
+                      <span className="font-mono text-[10px] text-brand" style={{ color: "var(--markup)" }}>
+                        marked
+                      </span>
+                    ) : null}
+                  </figcaption>
+                </figure>
+              ))}
             </div>
-            <p className="px-1 pt-3 font-mono text-[11px] tracking-[0.02em] text-muted-foreground">
-              The design canvas — references in, one look out
-            </p>
+
+            {/* The final: one large node card, as the canvas shows it. */}
+            <figure className="plate mt-3 p-3">
+              <div className="relative aspect-square overflow-hidden rounded-[14px] bg-muted">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/landing/final-look.jpg"
+                  alt="The rendered look: the client wearing the composed outfit on a runway"
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                />
+              </div>
+              <figcaption className="flex flex-wrap items-baseline justify-between gap-2 px-1 pt-3">
+                <span className="font-mono text-[11px] tracking-[0.02em] text-muted-foreground">
+                  look-27-v1.png
+                </span>
+                <span className="font-mono text-[11px] tracking-[0.02em] text-muted-foreground">
+                  gpt-image-2 · 1024² · saved by the graph
+                </span>
+              </figcaption>
+            </figure>
           </div>
         </div>
       </section>

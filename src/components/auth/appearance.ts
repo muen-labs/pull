@@ -2,7 +2,7 @@
  * Clerk, dressed as PULL.
  *
  * Two rules from the design system decide almost all of this:
- *   · **No radius.** Every PULL button is square (globals.css §buttons), so `borderRadius: "0"` — and
+ *   · **No radius.** Every PULL button is a pill (globals.css §buttons); the card is a 24px plate — and
  *     Clerk's inputs and primary button inherit it.
  *   · **Ink is the action, olive is emphasis.** The primary button is near-black, the focus ring and
  *     links take `--brand` (olive). The brand colour never becomes a fill.
@@ -23,7 +23,7 @@ export const clerkAppearance = {
     colorInputText: "#0a0a0a",
     colorBorder: "rgba(0, 0, 0, 0.08)",
     colorRing: "#0a0a0a", // ink — the kit's focus ring in this theme
-    borderRadius: "20px",
+    borderRadius: "24px",
     fontFamily: "var(--font-sans)",
     fontSize: "14px",
   },
@@ -37,7 +37,7 @@ export const clerkAppearance = {
     card: {
       boxShadow: "var(--brandos-card-shadow)",
       border: "1px solid var(--border)",
-      borderRadius: "20px",
+      borderRadius: "24px",
       backgroundColor: "var(--plate)",
     },
     headerTitle: "text-[20px] font-medium tracking-[-0.02em] text-foreground",
