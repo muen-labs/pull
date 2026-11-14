@@ -3,6 +3,7 @@ import { join } from "node:path"
 import Link from "next/link"
 
 import { AgentTraceReel, type TraceRow } from "@/components/landing/AgentTraceReel"
+import { Fold } from "@/components/landing/Fold"
 import { RevealObserver } from "@/components/landing/RevealObserver"
 import { ScreenCarousel, type ScreenStep } from "@/components/landing/ScreenCarousel"
 import { Pricing } from "@/components/landing/Pricing"
@@ -170,78 +171,98 @@ export default function LandingPage() {
       <noscript>
         <style>{`[data-reveal]{opacity:1;transform:none}`}</style>
       </noscript>
-      <section data-fold className="mx-auto max-w-[1440px] px-6 pt-14 md:px-10 md:pt-20">
-        <div className="fold"><div className="fold-inner">
-        <h1 className="mt-8 text-[clamp(52px,8.6vw,128px)] font-bold leading-[0.88] tracking-[-0.06em] text-foreground">
-          From selects to confirmed looks.
-        </h1>
+      <section className="mx-auto max-w-[1440px] px-6 pt-14 md:px-10 md:pt-20">
+        <Fold>
+          <h1 className="mt-8 text-[clamp(52px,8.6vw,128px)] font-bold leading-[0.88] tracking-[-0.06em] text-foreground">
+            From selects to confirmed looks.
+          </h1>
+        </Fold>
 
         {/* The action sits above the rule; the rule introduces the note. */}
-        <div className="mt-10">
-          <StartJobFlow kind="hero" />
-        </div>
+        <Fold delay={0.09}>
+          <div className="mt-10">
+            <StartJobFlow kind="hero" />
+          </div>
+        </Fold>
 
-        <div className="mt-10 border-t border-border pt-6">
-          <p className="max-w-[440px] text-[15px] leading-relaxed text-muted-foreground">
-            Pull. guides you through the entire process of prep. It reads every look, builds styling
-            boards, and sends off for client approval — then turns those approvals into pre-styled
-            mockups, showroom requests, and shipping labels.
-          </p>
-        </div>
-      </div></div>
+        <Fold delay={0.18}>
+          <div className="mt-10 border-t border-border pt-6">
+            <p className="max-w-[440px] text-[15px] leading-relaxed text-muted-foreground">
+              Pull. guides you through the entire process of prep. It reads every look, builds styling
+              boards, and sends off for client approval — then turns those approvals into pre-styled
+              mockups, showroom requests, and shipping labels.
+            </p>
+          </div>
+        </Fold>
       </section>
 
       {/* Endless strip: the clothes are the argument, the chrome is hairline.
           Grab it and slide it; the side gutters are blur filters pinned over the
           band, not empty margins — a look leaves the frame out of focus. */}
       {strip.length ? (
-        <LookMarquee srcs={strip} className="mt-16 border-t border-border md:mt-24" />
+        <Fold fade delay={0.06}>
+          <LookMarquee srcs={strip} className="mt-16 border-t border-border md:mt-24" />
+        </Fold>
       ) : null}
 
       {/* How it works, with the screens moving. */}
-      <section data-fold className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
-        <div className="fold"><div className="fold-inner">
-        <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-border pb-3">
-          <p className="text-[11px] tracking-[0.02em] text-muted-foreground">How it works</p>
-          <p className="text-[11px] tracking-[0.02em] text-muted-foreground">
-            Four moves, one record
-          </p>
-        </div>
+      <section className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
+        <Fold>
+          <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-border pb-3">
+            <p className="text-[11px] tracking-[0.02em] text-muted-foreground">How it works</p>
+            <p className="text-[11px] tracking-[0.02em] text-muted-foreground">
+              Four moves, one record
+            </p>
+          </div>
+        </Fold>
 
-        <h2 className="mt-8 max-w-[16ch] text-[clamp(32px,4.6vw,64px)] font-semibold leading-[0.95] tracking-[-0.04em] text-foreground">
-          Selects in. Requests out.
-        </h2>
+        <Fold delay={0.09}>
+          <h2 className="mt-8 max-w-[16ch] text-[clamp(32px,4.6vw,64px)] font-semibold leading-[0.95] tracking-[-0.04em] text-foreground">
+            Selects in. Requests out.
+          </h2>
+        </Fold>
 
-        <ScreenCarousel steps={STEPS} />
-      </div></div>
+        <Fold fade delay={0.18}>
+          <ScreenCarousel steps={STEPS} />
+        </Fold>
       </section>
 
       {/* The canvas: the marked references in, one large final card out. */}
-      <section data-fold className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
-        <div className="fold"><div className="fold-inner">
-        <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-border pb-3">
-          <p className="text-[11px] tracking-[0.02em] text-muted-foreground">The canvas</p>
-          <p className="text-[11px] tracking-[0.02em] text-muted-foreground">Mock-up, then try it on</p>
-        </div>
+      <section className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
+        <Fold>
+          <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-border pb-3">
+            <p className="text-[11px] tracking-[0.02em] text-muted-foreground">The canvas</p>
+            <p className="text-[11px] tracking-[0.02em] text-muted-foreground">
+              Mock-up, then try it on
+            </p>
+          </div>
+        </Fold>
 
         <div className="mt-8 grid gap-10 md:grid-cols-[minmax(0,380px)_minmax(0,1fr)] md:items-start md:gap-14">
           <div>
-            <h2 className="max-w-[16ch] text-[clamp(30px,3.6vw,44px)] font-semibold leading-[1] tracking-[-0.035em] text-foreground">
-              Mock up the outfit. Put it on the client.
-            </h2>
-            <p className="mt-4 max-w-[46ch] text-[15px] leading-relaxed text-muted-foreground">
-              Three pieces in — the jacket, the top, the trousers. Ring the one you mean and the
-              agent writes the prompt, then puts the outfit on a model. The render beside them is one
-              this canvas actually produced.
-            </p>
-            <div className="mt-6 flex flex-wrap items-center gap-2">
-              <Link href="/canvas" className="btn btn-ghost">
-                Open the canvas
-              </Link>
-            </div>
+            <Fold delay={0.09}>
+              <h2 className="max-w-[16ch] text-[clamp(30px,3.6vw,44px)] font-semibold leading-[1] tracking-[-0.035em] text-foreground">
+                Mock up the outfit. Put it on the client.
+              </h2>
+            </Fold>
+            <Fold delay={0.18}>
+              <p className="mt-4 max-w-[46ch] text-[15px] leading-relaxed text-muted-foreground">
+                Three pieces in — the jacket, the top, the trousers. Ring the one you mean and the
+                agent writes the prompt, then puts the outfit on a model. The render beside them is
+                one this canvas actually produced.
+              </p>
+            </Fold>
+            <Fold delay={0.27}>
+              <div className="mt-6 flex flex-wrap items-center gap-2">
+                <Link href="/canvas" className="btn btn-ghost">
+                  Open the canvas
+                </Link>
+              </div>
+            </Fold>
           </div>
 
-          <div>
+          <Fold fade delay={0.18}>
+            <div>
             {/* Three references on the left, one noodle each, into the 2:3 final on the right.
                 Fixed geometry so the curves actually land on both cards: refs 96×144, a 96×510 gap,
                 final 340×510. The wires are SVG paths with no fill — the marked piece carries the
@@ -390,89 +411,99 @@ export default function LandingPage() {
                 </figcaption>
               </figure>
             </div>
-          </div>
+            </div>
+          </Fold>
         </div>
-      </div></div>
       </section>
 
       {/* The agent, on the record. */}
-      <section data-fold className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
-        <div className="fold"><div className="fold-inner">
+      <section className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
         <div className="grid gap-10 border-t border-border pt-8 md:grid-cols-2 md:gap-16">
           <div>
-            <p className="text-[11px] tracking-[0.02em] text-muted-foreground">The agent</p>
-            <h2 className="mt-5 max-w-[14ch] text-[clamp(28px,3.6vw,48px)] font-semibold leading-[1] tracking-[-0.035em] text-foreground">
-              A pipeline, not a chat.
-            </h2>
-            <p className="mt-4 max-w-[44ch] text-[15px] leading-relaxed text-muted-foreground">
-              Every step the agent takes is a named tool call with its arguments, its result and how
-              long it took — visible while it runs, and kept afterwards. The agent drafts; you approve;
-              then it sends.
-            </p>
+            <Fold>
+              <p className="text-[11px] tracking-[0.02em] text-muted-foreground">The agent</p>
+            </Fold>
+            <Fold delay={0.09}>
+              <h2 className="mt-5 max-w-[14ch] text-[clamp(28px,3.6vw,48px)] font-semibold leading-[1] tracking-[-0.035em] text-foreground">
+                A pipeline, not a chat.
+              </h2>
+            </Fold>
+            <Fold delay={0.18}>
+              <p className="mt-4 max-w-[44ch] text-[15px] leading-relaxed text-muted-foreground">
+                Every step the agent takes is a named tool call with its arguments, its result and how
+                long it took — visible while it runs, and kept afterwards. The agent drafts; you
+                approve; then it sends.
+              </p>
+            </Fold>
           </div>
 
-          <div className="self-start">
+          <Fold fade delay={0.18} className="self-start">
             <article className="plate p-[18px]">
               <AgentTraceReel rows={TRACE} />
             </article>
-          </div>
+          </Fold>
         </div>
-      </div></div>
       </section>
 
       {/* Plans. */}
-      <section data-fold className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
-        <div className="fold"><div className="fold-inner">
-        <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-border pb-3">
-          <p className="text-[11px] tracking-[0.02em] text-muted-foreground">Plans</p>
-          <p className="text-[11px] tracking-[0.02em] text-muted-foreground">Cancel any time</p>
-        </div>
+      <section className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
+        <Fold>
+          <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-border pb-3">
+            <p className="text-[11px] tracking-[0.02em] text-muted-foreground">Plans</p>
+            <p className="text-[11px] tracking-[0.02em] text-muted-foreground">Cancel any time</p>
+          </div>
+        </Fold>
 
-        <h2 className="mt-8 max-w-[18ch] text-[clamp(32px,4.6vw,64px)] font-semibold leading-[0.95] tracking-[-0.04em] text-foreground">
-          Priced per stylist.
-        </h2>
+        <Fold delay={0.09}>
+          <h2 className="mt-8 max-w-[18ch] text-[clamp(32px,4.6vw,64px)] font-semibold leading-[0.95] tracking-[-0.04em] text-foreground">
+            Priced per stylist.
+          </h2>
+        </Fold>
 
         <Pricing />
-      </div></div>
       </section>
 
       {/* Questions. */}
-      <section data-fold className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
-        <div className="fold"><div className="fold-inner">
-        <div className="border-b border-border pb-3">
-          <p className="text-[11px] tracking-[0.02em] text-muted-foreground">Questions</p>
-        </div>
+      <section className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
+        <Fold>
+          <div className="border-b border-border pb-3">
+            <p className="text-[11px] tracking-[0.02em] text-muted-foreground">Questions</p>
+          </div>
+        </Fold>
 
         <div className="mt-8 grid gap-x-16 gap-y-8 md:grid-cols-2">
-          {FAQ.map((item) => (
-            <div key={item.q} className="border-t border-border pt-4">
-              <h3 className="text-[16px] font-medium leading-snug tracking-[-0.01em] text-foreground">
-                {item.q}
-              </h3>
-              <p className="mt-2 max-w-[52ch] text-[14px] leading-relaxed text-muted-foreground">
-                {item.a}
-              </p>
-            </div>
+          {FAQ.map((item, index) => (
+            <Fold key={item.q} delay={0.06 * index}>
+              <div className="border-t border-border pt-4">
+                <h3 className="text-[16px] font-medium leading-snug tracking-[-0.01em] text-foreground">
+                  {item.q}
+                </h3>
+                <p className="mt-2 max-w-[52ch] text-[14px] leading-relaxed text-muted-foreground">
+                  {item.a}
+                </p>
+              </div>
+            </Fold>
           ))}
         </div>
-      </div></div>
       </section>
 
       {/* Close. */}
-      <section data-fold className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
-        <div className="fold"><div className="fold-inner">
+      <section className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
         <div className="flex flex-wrap items-end justify-between gap-8 border-t border-border pt-8">
-          <h2 className="max-w-[16ch] text-[clamp(34px,5vw,72px)] font-semibold leading-[0.95] tracking-[-0.04em] text-foreground">
-            Start with a folder of screenshots.
-          </h2>
-          <div className="flex flex-wrap items-center gap-2">
-            <StartJobFlow kind="hero" />
-            <Link href="/board" className="btn btn-ghost">
-              See a board
-            </Link>
-          </div>
+          <Fold>
+            <h2 className="max-w-[16ch] text-[clamp(34px,5vw,72px)] font-semibold leading-[0.95] tracking-[-0.04em] text-foreground">
+              Start with a folder of screenshots.
+            </h2>
+          </Fold>
+          <Fold delay={0.09}>
+            <div className="flex flex-wrap items-center gap-2">
+              <StartJobFlow kind="hero" />
+              <Link href="/board" className="btn btn-ghost">
+                See a board
+              </Link>
+            </div>
+          </Fold>
         </div>
-      </div></div>
       </section>
 
       <footer className="mx-auto mt-20 flex max-w-[1440px] flex-wrap items-end justify-between gap-6 border-t border-border px-6 py-10 md:px-10">

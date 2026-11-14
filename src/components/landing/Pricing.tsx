@@ -12,6 +12,8 @@
  * numbers are a proposal for the founder to confirm before this page ships. Annual is two months free.
  */
 import { useCallback, useEffect, useRef, useState } from "react"
+
+import { Fold } from "./Fold"
 import { Check } from "lucide-react"
 
 import { StartJobFlow } from "@/components/start-job/StartJobFlow"
@@ -111,6 +113,7 @@ export function Pricing() {
 
   return (
     <div>
+      <Fold delay={0.18}>
       <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
         <div
           ref={trackRef}
@@ -159,12 +162,14 @@ export function Pricing() {
           Priced per seat. Clients and showrooms never take one.
         </p>
       </div>
+      </Fold>
 
       <div className="mt-8 grid gap-5 md:grid-cols-3">
         {PLANS.map((plan, index) => {
           const price = annual ? plan.annual : plan.monthly
           return (
-            <article key={plan.id} className="plate flex flex-col items-start gap-5 p-[18px]">
+            <Fold key={plan.id} delay={0.27 + index * 0.09} className="h-full">
+              <article className="plate flex h-full flex-col items-start gap-5 p-[18px]">
               {/* The action leads the card, as it does on the reference. */}
               {plan.cta === "start" ? (
                 <StartJobFlow kind="nav" />
@@ -214,6 +219,7 @@ export function Pricing() {
                 </ul>
               </div>
             </article>
+            </Fold>
           )
         })}
       </div>

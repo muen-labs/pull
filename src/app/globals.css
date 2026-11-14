@@ -277,9 +277,12 @@ color: var(--muted-foreground);
    hidden` would otherwise cut on the top and bottom edges.
 */
 .fold {
+  /* `overflow: clip` with a margin, rather than `hidden` plus padding: the clip still gives a focus
+     ring 6px of room, but it changes nothing about layout — a folded block is the same size as the
+     element it wraps, which is what lets a section be split into several of them. */
   overflow: hidden;
-  padding: 6px;
-  margin: -6px;
+  overflow: clip;
+  overflow-clip-margin: 6px;
 }
 .fold-inner {
   transform: translateY(100%);
@@ -290,13 +293,21 @@ color: var(--muted-foreground);
   transform: none;
 }
 
+/* Fade variant: blocks whose own motion would fight the travel simply cross-fade in place. */
+[data-fold][data-fade] .fold-inner {
+  transform: none;
+  opacity: 0;
+  transition: opacity 0.9s cubic-bezier(0.76, 0, 0.24, 1);
+}
+[data-fold][data-fade].is-visible .fold-inner {
+  opacity: 1;
+}
+
 /* Reduced motion is settled in CSS, not in the script: clamping the duration would leave the block
    parked at its hidden state until React ran, which is the flicker this setting exists to prevent. */
 @media (prefers-reduced-motion: reduce) {
   .fold {
     overflow: visible;
-    padding: 0;
-    margin: 0;
   }
   .fold-inner {
     transform: none;
