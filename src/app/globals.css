@@ -170,6 +170,19 @@ color: var(--muted-foreground);
   box-shadow: var(--brandos-card-shadow);
 }
 
+/* Same light as a plate: the CTA is a card, so its top edge catches it too. */
+.ai-button-body::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid transparent;
+  border-top-color: rgb(255 255 255 / 0.7);
+  border-left-color: rgb(255 255 255 / 0.28);
+  border-right-color: rgb(255 255 255 / 0.28);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
 .ai-button:focus-visible { outline: none; }
 .ai-button:focus-visible .ai-button-body {
   box-shadow: var(--brandos-card-shadow), 0 0 0 3px var(--ring);
@@ -231,9 +244,14 @@ color: var(--muted-foreground);
    The house card: a white surface on the wall, 16px corner, lifted by the kit's shadow. Named
    because the landing, the plans and the studio all use the same object. */
 .plate {
-  background: var(--plate);
+  position: relative;
+  /* Near-white, just above the wall: white enough to read as a raised card, off-white enough that the
+     white top highlight has something to sit on. Pure `--plate` made that highlight invisible. */
+  background: var(--card-raised);
   border-radius: 24px;
   box-shadow: var(--brandos-card-shadow);
+  /* The kit clips its card so the inner stroke below follows the radius. */
+  overflow: hidden;
 }
 
 /* ── price tick ────────────────────────────────────────────────────────────
@@ -242,6 +260,35 @@ color: var(--muted-foreground);
 @keyframes price-in {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: none; }
+}
+
+/* ── entrance ─────────────────────────────────────────────────────────────
+   The section reveal: calm ease-out, 0.7s, 26px of travel with a hint of scale. One motion per
+   element — the hover treatments stay separate. Reduced motion settles everything immediately, and
+   the page's own <noscript> rule does the same when the observer never runs. */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(26px) scale(0.96);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+[data-reveal].is-visible {
+  opacity: 1;
+  transform: none;
+}
+@media (max-width: 640px) {
+  [data-reveal] {
+    transform: translateY(14px) scale(0.98);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }
 
 /* ── noodle beads ─────────────────────────────────────────────────────────
@@ -307,11 +354,32 @@ color: var(--muted-foreground);
 .card {
   /* EVA's `--card` is the wall's own grey ("the card IS the wall"); the white surface that reads as
      a raised object is `--plate`. PULL's screens are forms and lists, so they take the plate. */
+  position: relative;
   background: var(--plate);
   border: 1px solid var(--border);
   border-radius: 24px;
   box-shadow: var(--brandos-card-shadow);
   padding: 22px;
+  overflow: hidden;
+}
+
+/* The second half of the kit's card light, and the half we were missing.
+ *
+ * EVA draws the top highlight twice: a 3px white inset inside the shadow stack (which PULL already
+ * had, via --brandos-card-shadow), and this 1px inner stroke whose top edge is 70% white with the
+ * sides at 28%. Without it a plate reads flat along the top edge — the inset alone is too soft to see.
+ */
+.plate::after,
+.card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid transparent;
+  border-top-color: rgb(255 255 255 / 0.7);
+  border-left-color: rgb(255 255 255 / 0.28);
+  border-right-color: rgb(255 255 255 / 0.28);
+  border-radius: inherit;
+  pointer-events: none;
 }
 .card.dark { background: var(--dark-2); border-color: var(--dark-line); color: var(--dark-text); }
 

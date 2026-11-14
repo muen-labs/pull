@@ -3,6 +3,7 @@ import { join } from "node:path"
 import Link from "next/link"
 
 import { AgentTraceReel, type TraceRow } from "@/components/landing/AgentTraceReel"
+import { RevealObserver } from "@/components/landing/RevealObserver"
 import { ScreenCarousel, type ScreenStep } from "@/components/landing/ScreenCarousel"
 import { Pricing } from "@/components/landing/Pricing"
 import { LookMarquee } from "@/components/LookMarquee"
@@ -164,7 +165,12 @@ export default function LandingPage() {
 
   return (
     <main className="landing">
-      <section className="mx-auto max-w-[1440px] px-6 pt-14 md:px-10 md:pt-20">
+      <RevealObserver />
+      {/* Without JS the observer never runs, so the sections must not stay hidden. */}
+      <noscript>
+        <style>{`[data-reveal]{opacity:1;transform:none}`}</style>
+      </noscript>
+      <section data-reveal className="mx-auto max-w-[1440px] px-6 pt-14 md:px-10 md:pt-20">
         <h1 className="mt-8 text-[clamp(52px,8.6vw,128px)] font-bold leading-[0.88] tracking-[-0.06em] text-foreground">
           From selects to confirmed looks.
         </h1>
@@ -191,7 +197,7 @@ export default function LandingPage() {
       ) : null}
 
       {/* How it works, with the screens moving. */}
-      <section className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
+      <section data-reveal className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
         <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-border pb-3">
           <p className="text-[11px] tracking-[0.02em] text-muted-foreground">How it works</p>
           <p className="text-[11px] tracking-[0.02em] text-muted-foreground">
@@ -207,7 +213,7 @@ export default function LandingPage() {
       </section>
 
       {/* The canvas: the marked references in, one large final card out. */}
-      <section className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
+      <section data-reveal className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
         <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-border pb-3">
           <p className="text-[11px] tracking-[0.02em] text-muted-foreground">The canvas</p>
           <p className="text-[11px] tracking-[0.02em] text-muted-foreground">Mock-up, then try it on</p>
@@ -384,7 +390,7 @@ export default function LandingPage() {
       </section>
 
       {/* The agent, on the record. */}
-      <section className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
+      <section data-reveal className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
         <div className="grid gap-10 border-t border-border pt-8 md:grid-cols-2 md:gap-16">
           <div>
             <p className="text-[11px] tracking-[0.02em] text-muted-foreground">The agent</p>
@@ -407,7 +413,7 @@ export default function LandingPage() {
       </section>
 
       {/* Plans. */}
-      <section className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
+      <section data-reveal className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
         <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-border pb-3">
           <p className="text-[11px] tracking-[0.02em] text-muted-foreground">Plans</p>
           <p className="text-[11px] tracking-[0.02em] text-muted-foreground">Cancel any time</p>
@@ -421,7 +427,7 @@ export default function LandingPage() {
       </section>
 
       {/* Questions. */}
-      <section className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
+      <section data-reveal className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
         <div className="border-b border-border pb-3">
           <p className="text-[11px] tracking-[0.02em] text-muted-foreground">Questions</p>
         </div>
@@ -441,7 +447,7 @@ export default function LandingPage() {
       </section>
 
       {/* Close. */}
-      <section className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
+      <section data-reveal className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
         <div className="flex flex-wrap items-end justify-between gap-8 border-t border-border pt-8">
           <h2 className="max-w-[16ch] text-[clamp(34px,5vw,72px)] font-semibold leading-[0.95] tracking-[-0.04em] text-foreground">
             Start with a folder of screenshots.
