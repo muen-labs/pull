@@ -7,93 +7,18 @@
  * **Links** stay ours: the client board (`/b/[token]`) and showroom intake (`/i/[token]`) are signed
  * with LINK_SECRET and verified here. They must never be Clerk-gated — a client never has an account.
  *
- * The magic-link session below is the demo-era mechanism, kept only so `sendMagicLink` still compiles
- * until `/login` is deleted; nothing reads the cookie any more.
+ * The magic-link session is gone: the cookie, the token and the allow-list check were the demo's
+ * stand-in for identity, and Clerk replaced all three.
  */
-import { createHash, createHmac, timingSafeEqual, randomBytes } from "node:crypto"
-import { cookies } from "next/headers"
+import { createHash, createHmac, timingSafeEqual } from "node:crypto"
 import { redirect } from "next/navigation"
 import { auth as clerkAuth, clerkClient } from "@clerk/nextjs/server"
-import { env, isAllowedEmail } from "./env"
+import { env } from "./env"
 import { resolveStylist, type Stylist } from "./tenancy"
 
-const COOKIE = "pull_session"
-const MAGIC_TTL = 60 * 15 // 15 minutes
-const SESSION_TTL = 60 * 60 * 24 * 30 // 30 days
-
-interface TokenPayload {
-  email: string
-  purpose: "login" | "session"
-  exp: number
-}
-
+/** URL-safe base64 for the link tokens — the client never sees a `+` or `/` in a pasted link. */
 function b64url(input: Buffer | string): string {
   return Buffer.from(input).toString("base64url")
-}
-
-export function signToken(payload: TokenPayload): string {
-  const secret = env().AUTH_SECRET
-  if (!secret) throw new Error("AUTH_SECRET is not set (SETUP.md step 6)")
-  const body = b64url(JSON.stringify(payload))
-  const sig = createHmac("sha256", secret).update(body).digest("base64url")
-  return `${body}.${sig}`
-}
-
-export function verifyToken(token: string | undefined): TokenPayload | null {
-  const secret = env().AUTH_SECRET
-  if (!token || !secret) return null
-  const [body, sig] = token.split(".")
-  if (!body || !sig) return null
-  const expected = createHmac("sha256", secret).update(body).digest("base64url")
-  const a = Buffer.from(sig)
-  const b = Buffer.from(expected)
-  if (a.length !== b.length || !timingSafeEqual(a, b)) return null
-  try {
-    const payload = JSON.parse(Buffer.from(body, "base64url").toString()) as TokenPayload
-    if (payload.exp < Math.floor(Date.now() / 1000)) return null
-    return payload
-  } catch {
-    return null
-  }
-}
-
-export function createMagicToken(email: string): string {
-  return signToken({ email, purpose: "login", exp: Math.floor(Date.now() / 1000) + MAGIC_TTL })
-}
-
-export function consumeMagicToken(token: string): string | null {
-  const payload = verifyToken(token)
-  if (!payload || payload.purpose !== "login") return null
-  if (!isAllowedEmail(payload.email)) return null
-  return payload.email
-}
-
-export async function startSession(email: string): Promise<void> {
-  const token = signToken({ email, purpose: "session", exp: Math.floor(Date.now() / 1000) + SESSION_TTL })
-  const jar = await cookies()
-  jar.set(COOKIE, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: SESSION_TTL,
-  })
-}
-
-export async function endSession(): Promise<void> {
-  const jar = await cookies()
-  jar.delete(COOKIE)
-}
-
-export async function getSession(): Promise<{ email: string } | null> {
-  const jar = await cookies()
-  const payload = verifyToken(jar.get(COOKIE)?.value)
-  if (!payload || payload.purpose !== "session") return null
-  return { email: payload.email }
-}
-
-export function newSecret(): string {
-  return randomBytes(32).toString("hex")
 }
 
 /**

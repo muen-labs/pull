@@ -14,10 +14,19 @@ const schema = z.object({
   SHIPPO_API_KEY: z.string().optional(),
   SHIPPO_WEBHOOK_SECRET: z.string().optional(),
 
-  AUTH_SECRET: z.string().optional(),
+  // Identity is Clerk's; LINK_SECRET is still ours, because the client link must never need a login.
+  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().optional(),
+  CLERK_SECRET_KEY: z.string().optional(),
   LINK_SECRET: z.string().optional(),
-  // One address or a comma/space separated list — the stylist, plus any test inbox. Validated by
-  // allowedEmails() below, not by .email(), because a list would fail that check and wipe the parse.
+
+  // Billing — Phase 2. Prices live in env so test and live ids cannot be mixed.
+  STRIPE_SECRET_KEY: z.string().optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  STRIPE_PRICE_SEAT_MONTHLY: z.string().optional(),
+  STRIPE_PRICE_SEAT_ANNUAL: z.string().optional(),
+  // The demo's mail-capture list: addresses that get real mail while RESEND_REDIRECT_TO parks
+  // everything else on one inbox. It gated sign-in before Clerk; the name stayed so old env files
+  // keep working. Validated by allowedEmails(), not .email(), because a list would fail that check.
   AUTH_ALLOWED_EMAIL: z.string().optional(),
   PUBLIC_BASE_URL: z.string().url().optional(),
 
@@ -65,7 +74,8 @@ export function env(): Env {
 }
 
 /**
- * Who may sign in. AUTH_ALLOWED_EMAIL takes one address or a list
+ * Who receives real mail while the demo captures everything else. AUTH_ALLOWED_EMAIL takes one
+ * address or a list
  * (`stylist@studio.com, test@second-device.com`), so the same demo can be opened on more than one
  * inbox without editing code. Comparison is case-insensitive and whitespace-tolerant.
  */
@@ -83,10 +93,12 @@ export function isAllowedEmail(email: string): boolean {
 
 export type ServiceName =
   | "Neon"
+  | "Clerk"
   | "Cloudinary"
   | "Resend"
   | "Shippo"
-  | "Auth secrets"
+  | "Link signing"
+  | "Stripe"
   | "Agent inference"
 
 export interface ServiceStatus {
@@ -125,10 +137,25 @@ export function serviceStatuses(): ServiceStatus[] {
       docs: "https://app.goshippo.com/settings/api",
     },
     {
-      name: "Auth secrets",
-      configured: Boolean(e.AUTH_SECRET && e.LINK_SECRET && e.AUTH_ALLOWED_EMAIL),
-      variables: ["AUTH_SECRET", "LINK_SECRET", "AUTH_ALLOWED_EMAIL"],
+      name: "Clerk",
+      // Both halves: the publishable key is what the browser needs, the secret is what the server does.
+      configured: Boolean(e.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && e.CLERK_SECRET_KEY),
+      variables: ["NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", "CLERK_SECRET_KEY"],
+      docs: "https://dashboard.clerk.com/~/api-keys",
+    },
+    {
+      name: "Link signing",
+      // Client and showroom links are signed with LINK_SECRET and are never Clerk-gated.
+      configured: Boolean(e.LINK_SECRET),
+      variables: ["LINK_SECRET"],
       docs: "/setup",
+    },
+    {
+      name: "Stripe",
+      // Phase 2. A subscription with a per-seat quantity; the webhook secret is what keeps it honest.
+      configured: Boolean(e.STRIPE_SECRET_KEY && e.STRIPE_WEBHOOK_SECRET),
+      variables: ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"],
+      docs: "https://dashboard.stripe.com/apikeys",
     },
     {
       name: "Agent inference",

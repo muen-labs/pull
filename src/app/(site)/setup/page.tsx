@@ -14,38 +14,55 @@ const STEPS: { step: string; title: string; service?: ServiceName; done?: boolea
   },
   {
     step: "2",
+    title: "Clerk — identity",
+    service: "Clerk",
+    detail:
+      "One application serves the whole Muen portfolio. Copy both dev keys; organizations stay optional, because a solo stylist can work without one.",
+    action: "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY / CLERK_SECRET_KEY",
+  },
+  {
+    step: "3",
     title: "Neon — database",
     service: "Neon",
     detail: "Create a project, copy the pooled DATABASE_URL, then apply the schema.",
     action: "npm run db:push",
   },
   {
-    step: "3",
+    step: "4",
     title: "Cloudinary — images & crop",
     service: "Cloudinary",
     detail: "Copy cloud name, API key and secret. The board crop is a Cloudinary transform.",
     action: "CLOUDINARY_CLOUD_NAME / API_KEY / API_SECRET",
   },
   {
-    step: "4",
+    step: "5",
     title: "Resend — email",
     service: "Resend",
     detail: "API key plus a verified sending domain (or onboarding@resend.dev while testing).",
     action: "RESEND_API_KEY / RESEND_FROM",
   },
   {
-    step: "5",
+    step: "6",
     title: "Shippo — labels",
     service: "Shippo",
     detail: "Start with a shippo_test_ key so the flow runs without spending money.",
     action: "SHIPPO_API_KEY",
   },
   {
-    step: "6",
-    title: "Auth secrets",
-    service: "Auth secrets",
-    detail: "AUTH_SECRET, LINK_SECRET and the one allow-listed email for the stylist.",
-    action: "npm run check",
+    step: "7",
+    title: "Link signing",
+    service: "Link signing",
+    detail:
+      "LINK_SECRET signs the client and showroom links. It is separate from Clerk on purpose: rotating it revokes every shared link without signing anyone out.",
+    action: "LINK_SECRET",
+  },
+  {
+    step: "8",
+    title: "Stripe — seats",
+    service: "Stripe",
+    detail:
+      "Phase 2. The studio pays per active seat; the webhook secret keeps the subscription quantity honest.",
+    action: "STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET",
   },
 ]
 

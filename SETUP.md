@@ -8,7 +8,7 @@ the ones after it, and every step ends with `npm run check` telling you whether 
 | 1 | App (Next.js) | pages, styling, the agent trace UI | **done** |
 | 2 | Neon | jobs, looks, requests, shipments | **done** (9 tables, 6 enums, write tested) |
 | 3 | Cloudinary | uploads + the crop that makes the boards | **done** (signed upload + crop verified) |
-| 4 | Resend | client link, request emails, magic-link login | **done** (sending-only key, capture on) |
+| 4 | Resend | client link, request emails | **done** (sending-only key, capture on) |
 | 5 | Shippo | rates, labels, tracking | **done** (live key, purchases gated) |
 | 6 | Auth secrets | protected studio + revocable public links | **done** |
 | 7 | Vercel | a deployable URL | open — nothing local depends on it |
@@ -186,7 +186,7 @@ is a flat colour will fail that stage.
      `RESEND_FROM="PULL <onboarding@resend.dev>"`. That sender is a **hard 403 for every recipient
      except the address on your Resend account** — it is not a soft warning, and `+alias` addresses
      are still rejected ([Resend's own note](https://resend.com/docs/knowledge-base/403-error-resend-dev-domain)).
-     So the magic-link login works (it goes to you), but Act 2's brand emails would fail. Fix it with
+     So mail to the capture list (yours) goes through, but Act 2's brand emails would fail. Fix it with
      the capture switch below rather than aliases.
 3. **Demo mail capture — needed until a domain is verified.** Set one inbox:
    ```
@@ -200,7 +200,7 @@ is a flat colour will fail that stage.
 4. `npm run check` → step 4 ✅, and it tells you whether a domain is verified and where captured
    mail is routed.
 
-**What it unlocks:** the magic-link login, the client link email, and the request emails in Act 2.
+**What it unlocks:** the client link email and the request emails in Act 2.
 Act 3's label reply attaches the Shippo PDF to the same thread.
 
 ---
@@ -271,47 +271,49 @@ Shippo → Settings → Carriers if you want them in the comparison.
 
 ---
 
-## Step 6 · Auth secrets
+## Step 6 · Clerk — identity
 
-**You do:** generate two secrets and name the allowed sign-in address(es).
+**You do:** create (or open) the Muen-wide Clerk application and copy its two development keys.
 
-```sh
-node -e "console.log('AUTH_SECRET=' + require('crypto').randomBytes(32).toString('hex'))"
-node -e "console.log('LINK_SECRET=' + require('crypto').randomBytes(32).toString('hex'))"
-```
-
-```
-AUTH_SECRET=…
-LINK_SECRET=…
-AUTH_ALLOWED_EMAIL=you@yourdomain.com
-```
+1. <https://dashboard.clerk.com> → the **Muen Collective** application → **Configure → API keys**.
+2. If it is not linked yet, the CLI does it in one line:
+   ```sh
+   npx clerk@latest link --app app_… && npx clerk@latest env pull
+   ```
+   `env pull` writes both keys into `.env.local`; nothing else to copy.
+   ```
+   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_…
+   CLERK_SECRET_KEY=sk_test_…
+   ```
+3. `LINK_SECRET` is still ours, and still required. Generate it once:
+   ```sh
+   node -e "console.log('LINK_SECRET=' + require('crypto').randomBytes(32).toString('hex'))"
+   ```
 
 Restart `npm run dev`, then `npm run check` → step 6 ✅.
 
-- `AUTH_SECRET` signs the session cookie. `LINK_SECRET` signs the **public** client and showroom
-  links — rotating it revokes every shared link without logging you out.
-- Only `AUTH_ALLOWED_EMAIL` can request a magic link. The link is emailed through Resend and expires
-  in 15 minutes.
-- `AUTH_ALLOWED_EMAIL` accepts a **comma-separated list**, so the demo can be opened from more than
-  one inbox — e.g. a work address and a phone-test address:
-  ```
-  AUTH_ALLOWED_EMAIL=jujehsiung@gmail.com,juje@viscosejournal.com
-  ```
-  Sign-in mail is never captured by `RESEND_REDIRECT_TO` (see step 4), so each address must be one
-  Resend is actually allowed to deliver to.
+- **One Clerk application serves the whole Muen portfolio.** Organizations are the customer; a
+  `workspaces` row is per product, so the same studio is not one tenant across PULL and Brand OS.
+- **Organizations are optional, not required.** A solo stylist works in a personal workspace; a studio
+  is an organization. Enabling mode "required" on a shared app would reroute every other product's
+  users through an org picker.
+- `LINK_SECRET` signs the **public** client and showroom links (`/b/[token]`, `/i/[token]`). Those are
+  never Clerk-gated — a client never has an account. Rotating the secret revokes every shared link
+  without signing anyone out.
+- `AUTH_SECRET` and the allow-list no longer gate anything. `AUTH_ALLOWED_EMAIL` survives only as the
+  demo's **mail-capture** list for `RESEND_REDIRECT_TO` (step 4).
 
-**Testing on a second device.** A mailed link points at whatever `PUBLIC_BASE_URL` says, and
-`localhost` means *that device*, not yours. Put your LAN address in `.env.local` and restart:
+**Testing on a second device.** `PUBLIC_BASE_URL` still decides what a mailed link points at, and
+`localhost` means *that device*, not yours:
 
 ```
 PUBLIC_BASE_URL=http://192.168.1.41:3000
 ```
 
-Both devices must be on the same Wi-Fi, and the Mac must accept incoming connections on 3000
-(firewall is off on this machine, so nothing to change). Find the address with
-`ipconfig getifaddr en0` — it changes between networks, so re-check it if a link stops opening.
+Both devices must be on the same Wi-Fi. Find the address with `ipconfig getifaddr en0` — it changes
+between networks, so re-check it if a link stops opening.
 
-**What it unlocks:** everything behind `/studio` (coming in M1) and the two public links.
+**What it unlocks:** everything behind `/studio`.
 
 ---
 
