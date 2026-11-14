@@ -311,6 +311,15 @@ color: var(--muted-foreground);
   }
   .fold-inner {
     transform: none;
+    opacity: 1;
+    transition: none;
+  }
+  /* The fade variant's `opacity: 0` outranks the rule above, so it has to be restated at its own
+     specificity — otherwise every faded block (the marquee, the carousel, the trace card) is left
+     invisible for exactly the readers this setting protects. */
+  [data-fold][data-fade] .fold-inner {
+    transform: none;
+    opacity: 1;
     transition: none;
   }
 }
