@@ -81,8 +81,15 @@ function actFor(pathname: string): number {
   return 0
 }
 
+/**
+ * Surfaces the guide must not appear on: the auth screens and the dev pages. It narrates the three
+ * acts, so on a sign-in screen it is somebody else's show.
+ */
+const HIDDEN_PREFIXES = ["/sign-in", "/sign-up", "/login", "/setup", "/design", "/trace"]
+
 export function DemoGuide() {
   const pathname = usePathname()
+  if (HIDDEN_PREFIXES.some((prefix) => pathname.startsWith(prefix))) return null
   const [collapsed, setCollapsed] = useState(false)
 
   useEffect(() => {

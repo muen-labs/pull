@@ -1,12 +1,13 @@
-import { SignUp } from "@clerk/nextjs";
-import { Suspense } from "react";
+import { Suspense } from "react"
+
+import { SignUpScreen } from "@/components/auth/SignUpScreen"
+
+export const metadata = { title: "Pull — start a studio" }
 
 export default function SignUpPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <Suspense>
-        <SignUp />
-      </Suspense>
-    </div>
-  );
+    <Suspense>
+      <SignUpScreen />
+    </Suspense>
+  )
 }
