@@ -76,10 +76,9 @@ const STEPS: ScreenStep[] = [
  * mock-up: the client on the left is worn through the jacket, top and trousers that follow.
  */
 const CANVAS_REFS = [
-  { name: "ref 1 · the client", src: "/fixtures/canvas/client-timothee-square.jpg", alt: "The client's portrait", marked: false },
-  { name: "ref 2 · the jacket", src: "/fixtures/menswear/prada_look_1_aw26.jpg", alt: "The jacket, with the client's mark around it", marked: true },
-  { name: "ref 3 · the top", src: "/fixtures/menswear/dior_homme_look_1_aw26.jpg", alt: "The top underneath", marked: false },
-  { name: "ref 4 · the trousers", src: "/fixtures/menswear/louis_vuitton_look_4_aw26.jpg", alt: "The trousers", marked: false },
+  { name: "the jacket", src: "/fixtures/menswear/prada_look_1_aw26.jpg", alt: "The jacket, ringed by the client", marked: true },
+  { name: "the top", src: "/fixtures/menswear/dior_homme_look_1_aw26.jpg", alt: "The top underneath", marked: false },
+  { name: "the trousers", src: "/fixtures/menswear/louis_vuitton_look_4_aw26.jpg", alt: "The trousers", marked: false },
 ]
 
 /** Real tool names and durations, as they appear on /trace. */
@@ -189,9 +188,9 @@ export default function LandingPage() {
               Mock up the outfit. Put it on the client.
             </h2>
             <p className="mt-4 max-w-[46ch] text-[15px] leading-relaxed text-muted-foreground">
-              Four references in — the client, the jacket, the top, the trousers. Ring the piece you
-              want and the agent writes the prompt, then renders the look on the model. The render
-              below is one this canvas actually produced.
+              Three pieces in — the jacket, the top, the trousers. Ring the one you mean and the
+              agent writes the prompt, then puts the outfit on a model. The render beside them is one
+              this canvas actually produced.
             </p>
             <div className="mt-6 flex flex-wrap items-center gap-2">
               <Link href="/canvas" className="btn btn-ghost">
@@ -201,11 +200,69 @@ export default function LandingPage() {
           </div>
 
           <div>
-            {/* The references, the marked one carrying the client's pen. */}
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {CANVAS_REFS.map((ref) => (
-                <figure key={ref.name} className="plate p-2">
-                  <div className="relative aspect-[3/4] overflow-hidden rounded-[12px] bg-muted">
+            {/* Three references on the left, one noodle each, into the 2:3 final on the right.
+                Fixed geometry so the curves actually land on both cards: refs 96×144, a 96×510 gap,
+                final 340×510. The wires are SVG paths with no fill — the marked piece carries the
+                magenta, the rest the hairline. */}
+            <div className="hidden items-center justify-center md:flex">
+              <div className="flex flex-col justify-center gap-6">
+                {CANVAS_REFS.map((ref) => (
+                  <figure key={ref.name} className="w-[96px]">
+                    <div className="relative aspect-[2/3] overflow-hidden rounded-[12px] bg-muted">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={ref.src}
+                        alt={ref.alt}
+                        className="h-full w-full object-cover object-top"
+                        loading="lazy"
+                      />
+                      {ref.marked ? (
+                        <span
+                          aria-hidden
+                          className="pointer-events-none absolute inset-[5px] rounded-[9px] border-2"
+                          style={{ borderColor: "var(--markup)" }}
+                        />
+                      ) : null}
+                    </div>
+                    <figcaption className="pt-2 font-mono text-[10px] tracking-[0.02em] text-muted-foreground">
+                      {ref.name}
+                    </figcaption>
+                  </figure>
+                ))}
+              </div>
+
+              <svg width="96" height="510" viewBox="0 0 96 510" fill="none" aria-hidden className="shrink-0">
+                <path d="M0 87C44 87 34 255 96 255" stroke="var(--markup)" strokeWidth="1" />
+                <path d="M0 255H96" stroke="var(--border)" strokeWidth="1" />
+                <path d="M0 423C44 423 34 255 96 255" stroke="var(--border)" strokeWidth="1" />
+              </svg>
+
+              <figure className="w-[340px] shrink-0">
+                <div className="relative aspect-[2/3] overflow-hidden rounded-[16px] bg-muted">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/landing/final-look-2x3.jpg"
+                    alt="The rendered look: the client wearing the three pieces on a runway"
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                  />
+                </div>
+                <figcaption className="flex flex-wrap items-baseline justify-between gap-2 px-0.5 pt-3">
+                  <span className="font-mono text-[11px] tracking-[0.02em] text-muted-foreground">
+                    look-27-v1.png
+                  </span>
+                  <span className="font-mono text-[11px] tracking-[0.02em] text-muted-foreground">
+                    gpt-image-2 · the client, wearing all three
+                  </span>
+                </figcaption>
+              </figure>
+            </div>
+
+            {/* Narrow: the same pieces stacked, without the wires. */}
+            <div className="md:hidden">
+              <div className="grid grid-cols-3 gap-2">
+                {CANVAS_REFS.map((ref) => (
+                  <div key={ref.name} className="relative aspect-[2/3] overflow-hidden rounded-[12px] bg-muted">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={ref.src}
@@ -216,45 +273,28 @@ export default function LandingPage() {
                     {ref.marked ? (
                       <span
                         aria-hidden
-                        className="pointer-events-none absolute inset-[6px] rounded-[10px] border-2"
+                        className="pointer-events-none absolute inset-[4px] rounded-[9px] border-2"
                         style={{ borderColor: "var(--markup)" }}
                       />
                     ) : null}
                   </div>
-                  <figcaption className="flex items-center justify-between gap-1 px-0.5 pt-2">
-                    <span className="truncate font-mono text-[10px] tracking-[0.02em] text-muted-foreground">
-                      {ref.name}
-                    </span>
-                    {ref.marked ? (
-                      <span className="font-mono text-[10px] text-brand" style={{ color: "var(--markup)" }}>
-                        marked
-                      </span>
-                    ) : null}
-                  </figcaption>
-                </figure>
-              ))}
-            </div>
-
-            {/* The final: one large node card, as the canvas shows it. */}
-            <figure className="plate mt-3 p-3">
-              <div className="relative aspect-square overflow-hidden rounded-[14px] bg-muted">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/landing/final-look.jpg"
-                  alt="The rendered look: the client wearing the composed outfit on a runway"
-                  className="h-full w-full object-cover"
-                  loading="lazy"
-                />
+                ))}
               </div>
-              <figcaption className="flex flex-wrap items-baseline justify-between gap-2 px-1 pt-3">
-                <span className="font-mono text-[11px] tracking-[0.02em] text-muted-foreground">
-                  look-27-v1.png
-                </span>
-                <span className="font-mono text-[11px] tracking-[0.02em] text-muted-foreground">
-                  gpt-image-2 · 1024² · saved by the graph
-                </span>
-              </figcaption>
-            </figure>
+              <figure className="mt-3">
+                <div className="relative mx-auto aspect-[2/3] w-[240px] overflow-hidden rounded-[16px] bg-muted">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/landing/final-look-2x3.jpg"
+                    alt="The rendered look: the client wearing the three pieces on a runway"
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                  />
+                </div>
+                <figcaption className="mt-2 text-center font-mono text-[10px] tracking-[0.02em] text-muted-foreground">
+                  gpt-image-2 · the client, wearing all three
+                </figcaption>
+              </figure>
+            </div>
           </div>
         </div>
       </section>
