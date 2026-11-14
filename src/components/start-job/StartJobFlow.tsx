@@ -994,13 +994,15 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
             <Button
               variant="ghost"
-              className="agent-action"
+              className="agent-action h-11 gap-2 px-5 text-[15px] font-medium"
+              data-running={loadingSuggestions ? "true" : "false"}
               onClick={() => void suggestLooks()}
               disabled={loadingSuggestions}
               title="Seeds the board from the client and the occasion"
             >
               <Sparkles className="size-4" aria-hidden />
-              {loadingSuggestions ? "Finding looks…" : "Suggest looks"}
+              {/* The label is an element so it sits above the race's inset body, like the icon. */}
+              <span>{loadingSuggestions ? "Finding looks…" : "Suggest looks"}</span>
             </Button>
             <div className="flex items-center gap-2">
               <DialogClose asChild>
