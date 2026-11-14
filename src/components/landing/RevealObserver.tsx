@@ -1,44 +1,49 @@
 "use client"
 
 /**
- * Entrance motion for the landing sections — the house recipe, not a library.
+ * The scroll trigger for the fold reveal — see `[data-fold]` in globals.css for the mechanic.
  *
- * Each `[data-reveal]` section starts 26px low and 4% small at zero opacity, and settles the first
- * time it scrolls into view (threshold 0.1, with a −40px bottom margin so it fires just inside the
- * fold). Sections already on screen at load — the hero — settle immediately instead of animating
- * under the reader.
+ * The trap this is written around: a block that never receives `.is-visible` is not un-animated, it is
+ * *invisible* — it sits one block-height below its clipping wrapper. So two rules hold:
  *
- * The observer only adds a class; the transition lives in CSS, so `prefers-reduced-motion` and the
- * no-JS case are one rule each rather than a code path here.
+ * 1. **Anything on screen at mount is revealed immediately**, whatever the band says. A block parked
+ *    on the viewport edge would otherwise be deleted.
+ * 2. **Observation stays live.** The state is set from `isIntersecting` on every entry, so scrolling
+ *    back re-runs the entrance — that is what makes it scroll-triggered rather than once-only.
+ *
+ * The band is `-10%` top and bottom so a block straddling the edge does not flicker, and the threshold
+ * is low enough that tall blocks (the plans run most of a screen) still fire.
  */
 import { useEffect } from "react"
 
 export function RevealObserver() {
   useEffect(() => {
-    const sections = Array.from(document.querySelectorAll<HTMLElement>("[data-reveal]"))
-    const settle = (el: Element) => el.classList.add("is-visible")
+    const blocks = Array.from(document.querySelectorAll<HTMLElement>("[data-fold]"))
 
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    if (reduced || !("IntersectionObserver" in window)) {
-      sections.forEach(settle)
+    const setVisible = (el: HTMLElement, visible: boolean) => {
+      el.classList.toggle("is-visible", visible)
+    }
+
+    if (!("IntersectionObserver" in window)) {
+      blocks.forEach((el) => setVisible(el, true))
       return
     }
 
     const observer = new IntersectionObserver(
       (entries) => {
-        for (const entry of entries) {
-          if (!entry.isIntersecting) continue
-          settle(entry.target)
-          observer.unobserve(entry.target)
-        }
+        for (const entry of entries) setVisible(entry.target as HTMLElement, entry.isIntersecting)
       },
-      { threshold: 0.1, rootMargin: "0px 0px -40px 0px" },
+      { threshold: 0.15, rootMargin: "-10% 0px -10% 0px" },
     )
 
-    for (const section of sections) {
-      // Already in the first screen: no animation, it would play before the eye arrives.
-      if (section.getBoundingClientRect().top < window.innerHeight * 0.85) settle(section)
-      else observer.observe(section)
+    for (const block of blocks) {
+      const box = block.getBoundingClientRect()
+      // On screen already: settle it before the observer has an opinion.
+      if (box.top < window.innerHeight && box.bottom > 0) {
+        requestAnimationFrame(() => setVisible(block, true))
+        continue
+      }
+      observer.observe(block)
     }
 
     return () => observer.disconnect()

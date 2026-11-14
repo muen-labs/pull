@@ -170,7 +170,8 @@ export default function LandingPage() {
       <noscript>
         <style>{`[data-reveal]{opacity:1;transform:none}`}</style>
       </noscript>
-      <section data-reveal className="mx-auto max-w-[1440px] px-6 pt-14 md:px-10 md:pt-20">
+      <section data-fold className="mx-auto max-w-[1440px] px-6 pt-14 md:px-10 md:pt-20">
+        <div className="fold"><div className="fold-inner">
         <h1 className="mt-8 text-[clamp(52px,8.6vw,128px)] font-bold leading-[0.88] tracking-[-0.06em] text-foreground">
           From selects to confirmed looks.
         </h1>
@@ -187,6 +188,7 @@ export default function LandingPage() {
             mockups, showroom requests, and shipping labels.
           </p>
         </div>
+      </div></div>
       </section>
 
       {/* Endless strip: the clothes are the argument, the chrome is hairline.
@@ -197,7 +199,8 @@ export default function LandingPage() {
       ) : null}
 
       {/* How it works, with the screens moving. */}
-      <section data-reveal className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
+      <section data-fold className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
+        <div className="fold"><div className="fold-inner">
         <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-border pb-3">
           <p className="text-[11px] tracking-[0.02em] text-muted-foreground">How it works</p>
           <p className="text-[11px] tracking-[0.02em] text-muted-foreground">
@@ -210,10 +213,12 @@ export default function LandingPage() {
         </h2>
 
         <ScreenCarousel steps={STEPS} />
+      </div></div>
       </section>
 
       {/* The canvas: the marked references in, one large final card out. */}
-      <section data-reveal className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
+      <section data-fold className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
+        <div className="fold"><div className="fold-inner">
         <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-border pb-3">
           <p className="text-[11px] tracking-[0.02em] text-muted-foreground">The canvas</p>
           <p className="text-[11px] tracking-[0.02em] text-muted-foreground">Mock-up, then try it on</p>
@@ -387,10 +392,12 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
+      </div></div>
       </section>
 
       {/* The agent, on the record. */}
-      <section data-reveal className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
+      <section data-fold className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
+        <div className="fold"><div className="fold-inner">
         <div className="grid gap-10 border-t border-border pt-8 md:grid-cols-2 md:gap-16">
           <div>
             <p className="text-[11px] tracking-[0.02em] text-muted-foreground">The agent</p>
@@ -410,10 +417,12 @@ export default function LandingPage() {
             </article>
           </div>
         </div>
+      </div></div>
       </section>
 
       {/* Plans. */}
-      <section data-reveal className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
+      <section data-fold className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
+        <div className="fold"><div className="fold-inner">
         <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-border pb-3">
           <p className="text-[11px] tracking-[0.02em] text-muted-foreground">Plans</p>
           <p className="text-[11px] tracking-[0.02em] text-muted-foreground">Cancel any time</p>
@@ -424,10 +433,12 @@ export default function LandingPage() {
         </h2>
 
         <Pricing />
+      </div></div>
       </section>
 
       {/* Questions. */}
-      <section data-reveal className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
+      <section data-fold className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
+        <div className="fold"><div className="fold-inner">
         <div className="border-b border-border pb-3">
           <p className="text-[11px] tracking-[0.02em] text-muted-foreground">Questions</p>
         </div>
@@ -444,10 +455,12 @@ export default function LandingPage() {
             </div>
           ))}
         </div>
+      </div></div>
       </section>
 
       {/* Close. */}
-      <section data-reveal className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
+      <section data-fold className="mx-auto max-w-[1440px] px-6 pt-20 md:px-10 md:pt-28">
+        <div className="fold"><div className="fold-inner">
         <div className="flex flex-wrap items-end justify-between gap-8 border-t border-border pt-8">
           <h2 className="max-w-[16ch] text-[clamp(34px,5vw,72px)] font-semibold leading-[0.95] tracking-[-0.04em] text-foreground">
             Start with a folder of screenshots.
@@ -459,6 +472,7 @@ export default function LandingPage() {
             </Link>
           </div>
         </div>
+      </div></div>
       </section>
 
       <footer className="mx-auto mt-20 flex max-w-[1440px] flex-wrap items-end justify-between gap-6 border-t border-border px-6 py-10 md:px-10">

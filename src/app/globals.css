@@ -262,30 +262,43 @@ color: var(--muted-foreground);
   to { opacity: 1; transform: none; }
 }
 
-/* ── entrance ─────────────────────────────────────────────────────────────
-   The section reveal: calm ease-out, 0.7s, 26px of travel with a hint of scale. One motion per
-   element — the hover treatments stay separate. Reduced motion settles everything immediately, and
-   the page's own <noscript> rule does the same when the observer never runs. */
-[data-reveal] {
-  opacity: 0;
-  transform: translateY(26px) scale(0.96);
-  transition:
-    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: opacity, transform;
+/* ── fold reveal ───────────────────────────────────────────────────────────
+   Each section is ONE object that rises from behind an edge that is never drawn.
+
+   `translateY(100%)` is exactly the block's own height, because a transform does not affect layout —
+   that is why the start state is a measurement and not a guessed offset. The wrapper clips, and the
+   fold itself has no border, mask or gradient: the content simply arrives from below.
+
+   The curve is ease-IN-OUT. An appear effect settles and wants ease-out; this content travels its
+   whole distance, and a symmetric curve is what makes that read as deliberate. Ease-out here dies
+   halfway.
+
+   6px of pad with an equal negative margin gives the clip room for a focus ring, which `overflow:
+   hidden` would otherwise cut on the top and bottom edges.
+*/
+.fold {
+  overflow: hidden;
+  padding: 6px;
+  margin: -6px;
 }
-[data-reveal].is-visible {
-  opacity: 1;
+.fold-inner {
+  transform: translateY(100%);
+  transition: transform 0.9s cubic-bezier(0.76, 0, 0.24, 1);
+  will-change: transform;
+}
+[data-fold].is-visible .fold-inner {
   transform: none;
 }
-@media (max-width: 640px) {
-  [data-reveal] {
-    transform: translateY(14px) scale(0.98);
-  }
-}
+
+/* Reduced motion is settled in CSS, not in the script: clamping the duration would leave the block
+   parked at its hidden state until React ran, which is the flicker this setting exists to prevent. */
 @media (prefers-reduced-motion: reduce) {
-  [data-reveal] {
-    opacity: 1;
+  .fold {
+    overflow: visible;
+    padding: 0;
+    margin: 0;
+  }
+  .fold-inner {
     transform: none;
     transition: none;
   }
