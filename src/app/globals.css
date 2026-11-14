@@ -212,6 +212,13 @@ color: var(--muted-foreground);
   box-shadow: var(--brandos-card-shadow);
 }
 
+/* ── noodle beads ─────────────────────────────────────────────────────────
+   The beads ride the reference→render wires with SMIL. Motion off, they are scenery that moves for no
+   reason, so they go entirely: the wire still connects the two cards. */
+@media (prefers-reduced-motion: reduce) {
+  .noodle-beads { display: none; }
+}
+
 /* ── buttons ──────────────────────────────────────────────────────────── */
 /* Muen controls: a rounded, embossed plate. The 3D comes from the inset highlights in
    `--embossed`, not from a heavy drop shadow — the kit's material, reused. */

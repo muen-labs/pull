@@ -81,6 +81,17 @@ const CANVAS_REFS = [
   { name: "the trousers", src: "/fixtures/menswear/louis_vuitton_look_4_aw26.jpg", alt: "The trousers", marked: false },
 ]
 
+/**
+ * The three noodles between the references and the final. `d` is drawn in the 96×510 gap next to the
+ * cards, so the endpoints are the reference's edge and the final's edge — see the geometry note there.
+ * The marked piece's wire carries the markup ink; the beads inherit it.
+ */
+const NOODLES = [
+  { id: "noodle-jacket", d: "M0 87C44 87 34 255 96 255", stroke: "var(--markup)" },
+  { id: "noodle-top", d: "M0 255H96", stroke: "var(--border)" },
+  { id: "noodle-trousers", d: "M0 423C44 423 34 255 96 255", stroke: "var(--border)" },
+]
+
 /** Real tool names and durations, as they appear on /trace. */
 const TRACE: TraceRow[] = [
   { tool: "cloudinary.trim", note: "look 27 · border trimmed", ms: 182 },
@@ -232,9 +243,40 @@ export default function LandingPage() {
               </div>
 
               <svg width="96" height="510" viewBox="0 0 96 510" fill="none" aria-hidden className="shrink-0">
-                <path d="M0 87C44 87 34 255 96 255" stroke="var(--markup)" strokeWidth="1" />
-                <path d="M0 255H96" stroke="var(--border)" strokeWidth="1" />
-                <path d="M0 423C44 423 34 255 96 255" stroke="var(--border)" strokeWidth="1" />
+                {NOODLES.map((noodle) => (
+                  <path
+                    key={noodle.id}
+                    id={noodle.id}
+                    d={noodle.d}
+                    stroke={noodle.stroke}
+                    strokeWidth="1"
+                  />
+                ))}
+
+                {/* Beads: three per noodle, spaced a third of the cycle apart, so each wire reads as a
+                    current flowing from the reference into the render. SMIL follows the path itself,
+                    which means the motion stays on the curve at any geometry. */}
+                <g className="noodle-beads">
+                  {NOODLES.map((noodle) =>
+                    [0, 1, 2].map((index) => (
+                      <circle
+                        key={`${noodle.id}-${index}`}
+                        r="2.4"
+                        fill={noodle.stroke === "var(--border)" ? "var(--muted-foreground)" : noodle.stroke}
+                        opacity={1 - index * 0.3}
+                      >
+                        <animateMotion
+                          dur="2.6s"
+                          begin={`${-index * 0.86}s`}
+                          repeatCount="indefinite"
+                          calcMode="linear"
+                        >
+                          <mpath href={`#${noodle.id}`} />
+                        </animateMotion>
+                      </circle>
+                    )),
+                  )}
+                </g>
               </svg>
 
               <figure className="w-[340px] shrink-0">
