@@ -133,21 +133,22 @@ export default function LandingPage() {
           alt="A look from the Louis Vuitton autumn collection on the runway"
           className="absolute inset-0 h-full w-full object-cover object-top"
         />
-        {/* A scrim only where type sits: the photograph stays the colour, the corners carry ink. */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-black/45" />
+        {/* The Muen scrim: a white lift at the top and bottom, so the photograph keeps its colour
+            and the ink type over it stays legible. Never a black wash. */}
+        <div className="absolute inset-0" style={{ background: "var(--scrim)" }} />
 
         <div className="relative flex h-full flex-col justify-between p-6 md:p-10">
           <div className="flex items-start justify-between gap-6">
-            <p className="font-mono text-[11px] tracking-[0.06em] text-white/80">
+            <p className="font-mono text-[11px] tracking-[0.06em] text-foreground/70">
               Selects in · Requests out
             </p>
-            <p className="font-mono text-[11px] tracking-[0.06em] text-white/70">
+            <p className="font-mono text-[11px] tracking-[0.06em] text-foreground/60">
               A styling studio · New York
             </p>
           </div>
 
           <div className="flex flex-wrap items-end justify-between gap-6">
-            <h1 className="max-w-[18ch] text-[clamp(32px,4.2vw,56px)] font-medium leading-[1.02] tracking-[-0.035em] text-white">
+            <h1 className="max-w-[18ch] text-[clamp(32px,4.2vw,56px)] font-medium leading-[1.02] tracking-[-0.035em] text-foreground">
               From selects to confirmed looks.
             </h1>
             <StartJobFlow kind="hero" />

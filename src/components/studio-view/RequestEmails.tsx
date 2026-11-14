@@ -14,6 +14,7 @@
  */
 import { useMemo, useState } from "react"
 import { Sparkles } from "lucide-react"
+import { AiButton } from "@/components/ai/AiButton"
 
 import { Button } from "@/components/ui/button"
 
@@ -347,16 +348,6 @@ export function RequestEmails({
               <b className="font-medium text-foreground">{counts.queued}</b> approved ·{" "}
               <b className="font-medium text-foreground">{counts.sent}</b> sent
             </span>
-            <Button
-              variant="outline"
-              size="sm"
-              className="agent-action"
-              onClick={draftAll}
-              disabled={running}
-            >
-              <Sparkles className="size-3.5" aria-hidden />
-              {running ? "Drafting…" : counts.drafted ? "Redraft requests" : "Draft requests"}
-            </Button>
           </div>
         </div>
       </header>
@@ -365,6 +356,19 @@ export function RequestEmails({
         Draft one email per brand from the client&apos;s approved looks. Nothing is sent until you
         approve it.
       </p>
+
+      {/* The agent action is the card: press it, and the light runs the border until the run lands. */}
+      <div className="mt-6 max-w-[620px]">
+        <AiButton
+          title={counts.drafted ? "Redraft the requests" : "Draft the requests"}
+          description="The agent writes one email per brand from the client's approved looks, with the shoot details already in it."
+          runningLabel={`Drafting ${brands.length} request${brands.length === 1 ? "" : "s"}…`}
+          meta={`${brands.length} brand${brands.length === 1 ? "" : "s"} · nothing sends until you approve`}
+          running={running}
+          disabled={brands.length === 0}
+          onClick={draftAll}
+        />
+      </div>
 
       {run ? (
         <AgentRun
