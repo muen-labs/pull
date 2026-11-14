@@ -76,9 +76,29 @@ const STEPS: ScreenStep[] = [
  * mock-up: the client on the left is worn through the jacket, top and trousers that follow.
  */
 const CANVAS_REFS = [
-  { name: "the jacket", src: "/fixtures/menswear/prada_look_1_aw26.jpg", alt: "The jacket, ringed by the client", marked: true },
-  { name: "the top", src: "/fixtures/menswear/dior_homme_look_1_aw26.jpg", alt: "The top underneath", marked: false },
-  { name: "the trousers", src: "/fixtures/menswear/louis_vuitton_look_4_aw26.jpg", alt: "The trousers", marked: false },
+  {
+    ref: "ref 1",
+    name: "the jacket",
+    src: "/fixtures/menswear/prada_look_1_aw26.jpg",
+    alt: "The jacket",
+    mark: null,
+  },
+  {
+    ref: "ref 2",
+    name: "the top",
+    src: "/fixtures/menswear/dior_homme_look_1_aw26.jpg",
+    alt: "The top, ringed by the stylist",
+    // Drawn in the card's own 100×150 space, over the sequined top the Dior look actually wears.
+    mark: "M30 34C34 18 66 14 72 30C76 44 70 66 57 70C43 74 30 61 30 47C30 41 30 37 30 34",
+  },
+  {
+    ref: "ref 3",
+    name: "the trousers",
+    src: "/fixtures/menswear/louis_vuitton_look_4_aw26.jpg",
+    alt: "The trousers, ringed by the stylist",
+    // The cream wide-leg trousers under the coat, which is where the pen lands.
+    mark: "M35 83C41 74 62 74 66 85C70 101 70 127 57 135C43 142 32 131 32 113C32 100 33 90 35 83",
+  },
 ]
 
 /**
@@ -87,9 +107,9 @@ const CANVAS_REFS = [
  * The marked piece's wire carries the markup ink; the beads inherit it.
  */
 const NOODLES = [
-  { id: "noodle-jacket", d: "M0 87C44 87 34 255 96 255", stroke: "var(--markup)" },
-  { id: "noodle-top", d: "M0 255H96", stroke: "var(--border)" },
-  { id: "noodle-trousers", d: "M0 423C44 423 34 255 96 255", stroke: "var(--border)" },
+  { id: "noodle-jacket", d: "M0 87C44 87 34 255 96 255", stroke: "var(--border)" },
+  { id: "noodle-top", d: "M0 255H96", stroke: "var(--markup)" },
+  { id: "noodle-trousers", d: "M0 423C44 423 34 255 96 255", stroke: "var(--markup)" },
 ]
 
 /** Real tool names and durations, as they appear on /trace. */
@@ -227,16 +247,27 @@ export default function LandingPage() {
                         className="h-full w-full object-cover object-top"
                         loading="lazy"
                       />
-                      {ref.marked ? (
-                        <span
+                      {ref.mark ? (
+                        <svg
+                          viewBox="0 0 100 150"
+                          preserveAspectRatio="none"
                           aria-hidden
-                          className="pointer-events-none absolute inset-[5px] rounded-[9px] border-2"
-                          style={{ borderColor: "var(--markup)" }}
-                        />
+                          className="pointer-events-none absolute inset-0 h-full w-full"
+                        >
+                          <path
+                            d={ref.mark}
+                            fill="none"
+                            stroke="var(--markup)"
+                            strokeWidth="1.6"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            opacity="0.95"
+                          />
+                        </svg>
                       ) : null}
                     </div>
                     <figcaption className="pt-2 font-mono text-[10px] tracking-[0.02em] text-muted-foreground">
-                      {ref.name}
+                      {ref.ref} · {ref.name}
                     </figcaption>
                   </figure>
                 ))}
@@ -312,12 +343,23 @@ export default function LandingPage() {
                       className="h-full w-full object-cover object-top"
                       loading="lazy"
                     />
-                    {ref.marked ? (
-                      <span
+                    {ref.mark ? (
+                      <svg
+                        viewBox="0 0 100 150"
+                        preserveAspectRatio="none"
                         aria-hidden
-                        className="pointer-events-none absolute inset-[4px] rounded-[9px] border-2"
-                        style={{ borderColor: "var(--markup)" }}
-                      />
+                        className="pointer-events-none absolute inset-0 h-full w-full"
+                      >
+                        <path
+                          d={ref.mark}
+                          fill="none"
+                          stroke="var(--markup)"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          opacity="0.95"
+                        />
+                      </svg>
                     ) : null}
                   </div>
                 ))}
