@@ -1005,10 +1005,23 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
               <span>{loadingSuggestions ? "Finding looks…" : "Suggest looks"}</span>
             </Button>
             <div className="flex items-center gap-2">
+              {/* The footer states its hierarchy through the primitives: Cancel is the outline
+                  (secondary) and Build board the ink primary. `ghost` made Cancel read as a label.
+                  Both take the pill geometry and 44px height of the agent action beside them, so the
+                  row reads as one family rather than two button systems. */}
               <DialogClose asChild>
-                <Button variant="ghost">Cancel</Button>
+                <Button
+                  variant="outline"
+                  className="h-11 rounded-full px-5 text-[15px] font-medium"
+                >
+                  Cancel
+                </Button>
               </DialogClose>
-              <Button onClick={buildBoard} disabled={!canBuild}>
+              <Button
+                className="h-11 rounded-full px-5 text-[15px] font-medium"
+                onClick={buildBoard}
+                disabled={!canBuild}
+              >
                 Build board
               </Button>
             </div>
