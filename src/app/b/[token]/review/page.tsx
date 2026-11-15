@@ -7,10 +7,11 @@
  */
 import type { Metadata } from "next"
 import Link from "next/link"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { boardImage } from "@/components/client-board/image"
 import { formatSubmittedAt } from "@/components/client-board/datetime"
 import styles from "@/components/client-board/client-board.module.css"
+import { gateOpenFor } from "@/lib/link-gate"
 import { submitReviewForm } from "@/server/actions/review"
 import {
   authorizeClientToken,
@@ -87,6 +88,9 @@ export default async function ClientReviewPage({ params }: { params: Promise<{ t
 
   const ctx = await authorizeClientToken(token)
   if (!ctx) notFound()
+
+  // same gate as the board: no verified device, no summary of the looks
+  if (ctx.job.clientVerify && !(await gateOpenFor(ctx.job.id))) redirect(`/b/${token}`)
 
   const reviewOpen = isReviewOpen(ctx.job)
   const counts = reviewCounts(ctx.looks)

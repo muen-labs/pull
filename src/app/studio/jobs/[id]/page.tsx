@@ -4,6 +4,7 @@ import { requireStylist } from "@/lib/auth"
 import { boardImageUrl } from "@/lib/cloudinary"
 import { getJobBoard } from "@/server/queries/jobs"
 import { ImportPanel } from "@/components/studio/ImportPanel"
+import { setClientVerifyForm } from "@/server/actions/client-gate"
 
 export const metadata = { title: "Pull — job" }
 
@@ -43,6 +44,26 @@ export default async function JobPage({ params }: { params: Promise<{ id: string
           </p>
         </header>
       </div>
+
+      <section aria-label="Client link access" className="plate" style={{ padding: 18 }}>
+        <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 16 }}>
+          <div>
+            <p className="eyebrow" style={{ margin: 0 }}>Client link</p>
+            <p className="small" style={{ margin: "6px 0 0" }}>
+              {job.clientVerify
+                ? "The client confirms their email once per device before the board opens. Forwarded links stay shut."
+                : "Anyone with the link can open the board. Turn this on for clients under NDA."}
+            </p>
+          </div>
+          <form action={setClientVerifyForm}>
+            <input type="hidden" name="jobId" value={job.id} />
+            <input type="hidden" name="enabled" value={job.clientVerify ? "0" : "1"} />
+            <button type="submit" className={job.clientVerify ? "btn btn-ghost btn-sm" : "btn btn-primary btn-sm"}>
+              {job.clientVerify ? "Turn email check off" : "Turn email check on"}
+            </button>
+          </form>
+        </div>
+      </section>
 
       <ImportPanel jobId={job.id} />
 

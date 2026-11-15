@@ -19,7 +19,9 @@ import { LookDecisionReadOnly } from "@/components/client-board/LookDecisionRead
 import { LookReviewControls } from "@/components/client-board/LookReviewControls"
 import { ReviewSubmittedBanner } from "@/components/client-board/ReviewSubmittedBanner"
 import { SubmitBar } from "@/components/client-board/SubmitBar"
+import { VerifyGate } from "@/components/client-board/VerifyGate"
 import styles from "@/components/client-board/client-board.module.css"
+import { gateOpenFor, maskEmail } from "@/lib/link-gate"
 import { authorizeClientToken, isReviewOpen, reviewCounts, sectionsFor } from "@/server/queries/review"
 
 /** A published board changes only when the stylist re-publishes — never serve a cached snapshot. */
@@ -31,11 +33,23 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false, nocache: true },
 }
 
-export default async function ClientBoardPage({ params }: { params: Promise<{ token: string }> }) {
+export default async function ClientBoardPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ token: string }>
+  searchParams: Promise<{ sent?: string; err?: string }>
+}) {
   const { token } = await params
+  const { sent, err } = await searchParams
 
   const ctx = await authorizeClientToken(token)
   if (!ctx) notFound()
+
+  // The link proves the link; the code proves the person. Only the studio can turn this off.
+  if (ctx.job.clientVerify && !(await gateOpenFor(ctx.job.id))) {
+    return <VerifyGate token={token} maskedEmail={maskEmail(ctx.job.clientEmail)} sent={Boolean(sent)} err={err} />
+  }
 
   const reviewOpen = isReviewOpen(ctx.job)
   const counts = reviewCounts(ctx.looks)

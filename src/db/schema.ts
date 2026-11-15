@@ -160,6 +160,12 @@ export const jobs = pgTable(
      */
     publicToken: text("public_token"),
     /**
+     * Whether /b/[token] asks the visitor to confirm their email before showing the board.
+     * On by default — the link is the only credential otherwise, and forwarding it is the risk.
+     * The studio can turn it off per job for clients who refuse the extra step.
+     */
+    clientVerify: boolean("client_verify").notNull().default(true),
+    /**
      * FR-11: submitting a review "timestamps it once" and locks further client edits. The PRD's
      * report (FR-12) quotes the submission time, so it needs a column; `status = client_reviewed`
      * alone cannot say when.
@@ -395,4 +401,27 @@ export const labelCharges = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("label_charges_workspace_idx").on(t.workspaceId, t.createdAt)],
+)
+
+/**
+ * One emailed login code for a client link (see `lib/link-gate.ts`).
+ *
+ * Only a hash is stored: a database read cannot replay a code. `attempts` is what stops a six-digit
+ * guess, and `expiresAt` is short on purpose — a code that outlives the moment it was requested is
+ * a code that ends up in a screenshot.
+ */
+export const linkCodes = pgTable(
+  "link_codes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    jobId: uuid("job_id").notNull(),
+    /** The address the code was sent to — the whole point is that only that inbox can open the link. */
+    email: text("email").notNull(),
+    codeHash: text("code_hash").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    attempts: integer("attempts").notNull().default(0),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("link_codes_job_idx").on(t.jobId, t.createdAt)],
 )
