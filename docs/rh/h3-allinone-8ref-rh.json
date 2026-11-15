@@ -3418,10 +3418,10 @@
     "aux_id": "pictorialink/ComfyUI-Text-Translation"
    },
    "widgets_values": [
-    "Edit <Picture 1>. A full-body editorial lookbook photograph of the man in <Picture 1>, wearing the black double-breasted overcoat from <Picture 2>, the purple sequined top from <Picture 3>, the cream wide-leg trousers from <Picture 4> and the black leather shoes from <Picture 5>. Standing on a seamless light-grey studio floor, soft even daylight, 35mm film grain, natural skin texture, one single frame, no grid, no panels, no collage, no text, no watermark."
+    "Edit <Picture 1> into one single photograph. Full-body editorial lookbook frame: the person from <Picture 1> wearing the black double-breasted overcoat from <Picture 2>, the purple sequined top from <Picture 3>, the cream wide-leg trousers from <Picture 4> and the black leather shoes from <Picture 5>. Seamless light-grey studio floor, soft even daylight, 35mm film grain, natural skin texture. One frame only: do not draw a grid, a contact sheet, a set of panels, or a collage \u2014 every reference is part of this one photograph, not a picture of its own."
    ],
    "widgets_values_named": {
-    "text": "Edit <Picture 1>. A full-body editorial lookbook photograph of the man in <Picture 1>, wearing the black double-breasted overcoat from <Picture 2>, the purple sequined top from <Picture 3>, the cream wide-leg trousers from <Picture 4> and the black leather shoes from <Picture 5>. Standing on a seamless light-grey studio floor, soft even daylight, 35mm film grain, natural skin texture, one single frame, no grid, no panels, no collage, no text, no watermark."
+    "text": "Edit <Picture 1> into one single photograph. Full-body editorial lookbook frame: the person from <Picture 1> wearing the black double-breasted overcoat from <Picture 2>, the purple sequined top from <Picture 3>, the cream wide-leg trousers from <Picture 4> and the black leather shoes from <Picture 5>. Seamless light-grey studio floor, soft even daylight, 35mm film grain, natural skin texture. One frame only: do not draw a grid, a contact sheet, a set of panels, or a collage \u2014 every reference is part of this one photograph, not a picture of its own."
    },
    "color": "#232",
    "bgcolor": "#353"
@@ -3908,10 +3908,10 @@
     "aux_id": "pictorialink/ComfyUI-Text-Translation"
    },
    "widgets_values": [
-    "[Reference roles]\nPicture 1 = the client. This is the picture to edit: keep the face, hair and identity exactly.\nPicture 2 = the jacket. Picture 3 = the top. Picture 4 = the trousers. Picture 5 = the shoes.\nPicture 6-8 = optional detail or accessory shots; use them only if the prompt names them."
+    "Edit <Picture 1> into one single photograph. Full-body editorial lookbook frame: the person from <Picture 1> wearing the black double-breasted overcoat from <Picture 2>, the purple sequined top from <Picture 3>, the cream wide-leg trousers from <Picture 4> and the black leather shoes from <Picture 5>. Seamless light-grey studio floor, soft even daylight, 35mm film grain, natural skin texture. One frame only: do not draw a grid, a contact sheet, a set of panels, or a collage \u2014 every reference is part of this one photograph, not a picture of its own."
    ],
    "widgets_values_named": {
-    "text": "[Reference roles]\nPicture 1 = the client. This is the picture to edit: keep the face, hair and identity exactly.\nPicture 2 = the jacket. Picture 3 = the top. Picture 4 = the trousers. Picture 5 = the shoes.\nPicture 6-8 = optional detail or accessory shots; use them only if the prompt names them."
+    "text": "Edit <Picture 1> into one single photograph. Full-body editorial lookbook frame: the person from <Picture 1> wearing the black double-breasted overcoat from <Picture 2>, the purple sequined top from <Picture 3>, the cream wide-leg trousers from <Picture 4> and the black leather shoes from <Picture 5>. Seamless light-grey studio floor, soft even daylight, 35mm film grain, natural skin texture. One frame only: do not draw a grid, a contact sheet, a set of panels, or a collage \u2014 every reference is part of this one photograph, not a picture of its own."
    },
    "color": "#232",
    "bgcolor": "#353"
