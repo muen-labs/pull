@@ -21,6 +21,7 @@ import {
 } from "@/server/actions/labels"
 import { getLabelPanelState, trackingLabel } from "@/server/requests/labels"
 import { formatDays, formatMoney } from "@/components/intake/format"
+import { labelCharge } from "@/lib/labels"
 
 const REQUEST_STATUS: Record<string, string> = {
   draft: "Draft",
@@ -142,10 +143,20 @@ export async function LabelPanel({ requestId }: { requestId: string }) {
                     This spends money on the Shippo account — {formatMoney(chosenRate.amount, chosenRate.currency)}.
                   </p>
                 )}
+                {/* The split, before the click: the carrier's price and Pull's 15% handling. A
+                    surcharge a studio only meets on an invoice is the fastest way to lose one. */}
+                <p className="small" style={{ margin: "8px 0 0" }}>
+                  {formatMoney(chosenRate.amount, chosenRate.currency)} label +{" "}
+                  {formatMoney(labelCharge(chosenRate.amount, chosenRate.currency).surchargeCents / 100, chosenRate.currency)}{" "}
+                  handling ={" "}
+                  <strong>
+                    {formatMoney(labelCharge(chosenRate.amount, chosenRate.currency).totalCents / 100, chosenRate.currency)}
+                  </strong>
+                </p>
                 <form action={purchaseLabelForm} style={{ marginTop: 10 }}>
                   <input type="hidden" name="requestId" value={request.id} />
                   <button type="submit" className="btn btn-primary" disabled={!purchaseGate.enabled}>
-                    Buy label — {formatMoney(chosenRate.amount, chosenRate.currency)} (spends money)
+                    Buy label — {formatMoney(labelCharge(chosenRate.amount, chosenRate.currency).totalCents / 100, chosenRate.currency)} (spends money)
                   </button>
                 </form>
               </>

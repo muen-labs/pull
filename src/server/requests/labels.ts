@@ -15,8 +15,9 @@
  */
 import { and, asc, eq } from "drizzle-orm"
 import { db } from "@/db/client"
-import { contacts, emails, jobs, requests, shipments } from "@/db/schema"
+import { contacts, emails, jobs, labelCharges, requests, shipments } from "@/db/schema"
 import { recordHuman, withTrace } from "@/lib/agent/tracer"
+import { labelCharge } from "@/lib/labels"
 import { buyLabel, getTracking, shippoMode } from "@/lib/shippo"
 import { sendEmail } from "@/lib/resend"
 import { publicIntakePath } from "@/lib/share"
@@ -229,6 +230,37 @@ export async function purchaseLabel(requestId: string): Promise<LabelActionResul
         service: shipment.service,
       })
       .where(eq(shipments.requestId, requestId))
+
+    /**
+     * Record what this cost while the carrier's number is still in hand: the price is taken from the
+     * charge the purchase returned when it carries one, and from the chosen rate otherwise. Written
+     * once per label — a second purchase is already blocked above.
+     */
+    // `Label` carries the artifact, not the price; the price is what the rate quoted and the
+    // shipment stored when it was chosen.
+    const carrierCents = shipment.amountCents ?? 0
+    const charge = labelCharge(carrierCents, shipment.currency ?? "USD")
+    const [workspaceRow] = await db()
+      .select({ workspaceId: jobs.workspaceId })
+      .from(jobs)
+      .where(eq(jobs.id, request.jobId))
+      .limit(1)
+    await db()
+      .insert(labelCharges)
+      .values({
+        workspaceId: workspaceRow?.workspaceId ?? null,
+        jobId: request.jobId,
+        requestId,
+        carrierCents: charge.carrierCents,
+        surchargeCents: charge.surchargeCents,
+        totalCents: charge.totalCents,
+        surchargeRate: charge.rate.toFixed(2),
+        currency: charge.currency,
+      })
+      .catch(() => {
+        // A failed charge row must not undo a bought label: the label exists, so the money is spent.
+      })
+
     await recordHuman(request.jobId, "label.bought", {
       requestId,
       carrier: bought.carrier,

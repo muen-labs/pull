@@ -357,3 +357,32 @@ export const walletEntries = pgTable(
   },
   (t) => [index("wallet_entries_workspace_idx").on(t.workspaceId, t.createdAt)],
 )
+
+/**
+ * What each label cost the studio, and what Pull added on top.
+ *
+ * Written at purchase, when the carrier's price is known for certain. `status` moves from
+ * `unbilled` to `billed` when a month is invoiced, so a studio can see the same rows the invoice
+ * was built from — and Muen can answer "what did this studio ship in March" from one table.
+ */
+export const labelCharges = pgTable(
+  "label_charges",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id").notNull(),
+    jobId: uuid("job_id"),
+    requestId: uuid("request_id"),
+    /** The carrier's own price, in cents — pass-through, never revenue. */
+    carrierCents: integer("carrier_cents").notNull(),
+    /** Pull's handling, in cents. */
+    surchargeCents: integer("surcharge_cents").notNull(),
+    totalCents: integer("total_cents").notNull(),
+    /** The rate in force at purchase (0.15), so an old row still explains its own numbers. */
+    surchargeRate: numeric("surcharge_rate", { precision: 4, scale: 2 }).notNull(),
+    currency: text("currency").notNull().default("USD"),
+    /** `unbilled` | `billed`. */
+    status: text("status").notNull().default("unbilled"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("label_charges_workspace_idx").on(t.workspaceId, t.createdAt)],
+)
