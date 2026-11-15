@@ -13,7 +13,6 @@ import { notFound } from "next/navigation"
 import { shippoMode } from "@/lib/shippo"
 import { formatIsoDate, formatMoney, formatDays } from "@/components/intake/format"
 import { IntakeForm } from "@/components/intake/IntakeForm"
-import { RateOptions } from "@/components/intake/RateOptions"
 import {
   authorizeIntakeToken,
   intakeDefaults,
@@ -151,12 +150,33 @@ export default async function IntakePage({ params }: { params: Promise<{ token: 
               </p>
             ) : null}
 
-            <RateOptions
-              rates={rates}
-              mode={mode}
-              routeSummary={existingRoute}
-              parcelSummary={existingParcel}
-            />
+            {/* The showroom never prices the shipment. It entered the parcel; the studio picks the
+                service and pays for it, so no amount and no service list reach this page — that is
+                also what stops a showroom choosing an overnight service on the studio's account. */}
+            <div
+              style={{
+                marginTop: 20,
+                padding: "18px 20px",
+                border: "1px solid rgb(0 0 0 / 0.08)",
+                borderRadius: 16,
+                background: "var(--plate)",
+              }}
+            >
+              <p style={{ margin: 0, fontWeight: 600 }}>Request received</p>
+              <p className="small" style={{ margin: "6px 0 0", maxWidth: 560 }}>
+                The studio is confirming the courier and paying for the label. When it is ready it
+                arrives by email, and it will also appear on this page.
+              </p>
+              {rates.length > 0 ? (
+                <p className="small" style={{ margin: "10px 0 0", color: "var(--muted-foreground)" }}>
+                  Courier options are being compared · {parcelSummary(shipment?.intake ?? null)}
+                </p>
+              ) : (
+                <p className="small" style={{ margin: "10px 0 0", color: "var(--muted-foreground)" }}>
+                  Courier options are being quoted · {parcelSummary(shipment?.intake ?? null)}
+                </p>
+              )}
+            </div>
           </section>
         ) : (
           <IntakeForm
