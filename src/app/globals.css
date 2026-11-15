@@ -274,13 +274,20 @@ color: var(--muted-foreground);
 /* ── plate ────────────────────────────────────────────────────────────────
    The house card: a white surface on the wall, 16px corner, lifted by the kit's shadow. Named
    because the landing, the plans and the studio all use the same object. */
-.plate {
-  position: relative;
+/* `.plate-surface` is the material alone — no `position`, no `overflow` — for surfaces whose
+   positioning belongs to a utility (a dialog is `fixed` + centred by `-translate-y-1/2`). This split
+   exists because unlayered CSS outranks Tailwind's utility layer: a `.plate` on the dialog silently
+   beat `fixed`, and the panel stopped being viewport-centred. */
+.plate,
+.plate-surface {
   /* Near-white, just above the wall: white enough to read as a raised card, off-white enough that the
      white top highlight has something to sit on. Pure `--plate` made that highlight invisible. */
   background: var(--card-raised);
   border-radius: 24px;
   box-shadow: var(--brandos-card-shadow);
+}
+.plate {
+  position: relative;
   /* The kit clips its card so the inner stroke below follows the radius. */
   overflow: hidden;
 }
@@ -434,6 +441,7 @@ color: var(--muted-foreground);
  * sides at 28%. Without it a plate reads flat along the top edge — the inset alone is too soft to see.
  */
 .plate::after,
+.plate-surface::after,
 .card::after {
   content: "";
   position: absolute;

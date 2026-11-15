@@ -187,27 +187,27 @@ export function Pricing() {
                 <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">{plan.blurb}</p>
               </div>
 
-              {/* The number is the scale cue, not decoration: 01, 02, 03 down the row. */}
-              <p className="text-[30px] font-semibold leading-none tracking-[-0.03em] text-foreground">
-                {String(index + 1).padStart(2, "0")}
+              {/* The price is the card's scale cue, where the row index used to sit: the plan is a
+                  number before it is a list, and the number belongs at the size of a headline. */}
+              <p className="flex items-baseline gap-1.5 text-foreground">
+                <span
+                  key={`${plan.id}-${annual ? "annual" : "monthly"}`}
+                  className={`font-semibold leading-none tracking-[-0.03em] motion-safe:animate-[price-in_240ms_ease-out] ${
+                    price === null ? "text-[26px]" : "text-[34px]"
+                  }`}
+                >
+                  {price === null ? "Talk to us" : `$${price}`}
+                </span>
+                {price !== null ? (
+                  <span className="text-[13px] text-muted-foreground">
+                    / seat / {annual ? "mo, billed yearly" : "mo"}
+                  </span>
+                ) : null}
               </p>
 
               {/* The card's own content still fills it; only the action hugs its label. */}
               <div className="w-full rounded-[16px] bg-muted p-4">
-                <p className="flex items-baseline gap-1.5 text-foreground">
-                  <span
-                    key={`${plan.id}-${annual ? "annual" : "monthly"}`}
-                    className="text-[22px] font-semibold leading-none tracking-[-0.02em] motion-safe:animate-[price-in_240ms_ease-out]"
-                  >
-                    {price === null ? "Talk to us" : `$${price}`}
-                  </span>
-                  {price !== null ? (
-                    <span className="text-[12px] text-muted-foreground">
-                      / seat / {annual ? "mo, billed yearly" : "mo"}
-                    </span>
-                  ) : null}
-                </p>
-                <p className="mt-1 text-[11px] tracking-[0.02em] text-muted-foreground">{plan.seats}</p>
+                <p className="text-[11px] tracking-[0.02em] text-muted-foreground">{plan.seats}</p>
 
                 <ul className="mt-4 flex flex-col gap-2">
                   {plan.features.map((feature) => (
