@@ -211,8 +211,10 @@ export function Pricing() {
                 ) : null}
               </p>
 
-              {/* The card's own content still fills it; only the action hugs its label. */}
-              <div className="w-full rounded-[16px] bg-muted p-4">
+              {/* The card's own content still fills it; only the action hugs its label. The panel
+                  is anchored to the bottom, so all three cards finish their list at the same line
+                  however much copy sits above it. */}
+              <div className="mt-auto w-full rounded-[16px] bg-muted p-4">
                 <p className="text-[11px] tracking-[0.02em] text-muted-foreground">{plan.seats}</p>
 
                 <ul className="mt-4 flex flex-col gap-2">

@@ -321,6 +321,16 @@ color: var(--muted-foreground);
   overflow: hidden;
   overflow: clip;
   overflow-clip-margin: 6px;
+  /* The fold passes its height through. A block that is a grid item (a plan card) is stretched by the
+     grid, but the inner is what holds the card — without this the three cards each take their own
+     content height and the row ends up ragged. On an auto-height block this changes nothing. */
+  display: flex;
+  flex-direction: column;
+}
+.fold > .fold-inner {
+  flex: 1 1 auto;
+  /* A column flex item would otherwise shrink to fit content on the cross axis. */
+  min-height: 0;
 }
 .fold-inner {
   transform: translateY(100%);
