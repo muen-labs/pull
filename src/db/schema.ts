@@ -328,6 +328,14 @@ export const events = pgTable(
 export const wallets = pgTable("wallets", {
   workspaceId: uuid("workspace_id").primaryKey(),
   balance: integer("balance").notNull().default(0),
+  /**
+   * Prepaid money, in cents. Generations reset monthly; this does not — it is topped up and spent.
+   *
+   * Labels are charged ON THE SPOT, so a studio has to have the money before the carrier is paid.
+   * Keeping it separate from `balance` is not cosmetic: generations are an allowance, cents are cash,
+   * and a single number could not safely hold both.
+   */
+  moneyCents: integer("money_cents").notNull().default(0),
   /** What a monthly reset puts back — copied from the plan, not derived at read time. */
   monthlyGrant: integer("monthly_grant").notNull().default(0),
   /** Start of the current allowance period; a read past 30 days rolls it. */
@@ -346,6 +354,8 @@ export const walletEntries = pgTable(
     workspaceId: uuid("workspace_id").notNull(),
     /** Negative for a spend, positive for a grant, a top-up or a refund. */
     delta: integer("delta").notNull(),
+    /** `generation` | `cent` — one statement, two units, never a number without its unit. */
+    unit: text("unit").notNull().default("generation"),
     /** The balance after this movement — a running statement the studio can read top to bottom. */
     balanceAfter: integer("balance_after").notNull(),
     /** `grant` | `render` | `research` | `refund` | `top_up`. */

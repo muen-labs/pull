@@ -18,6 +18,7 @@ import { db } from "@/db/client"
 import { contacts, emails, jobs, labelCharges, requests, shipments } from "@/db/schema"
 import { recordHuman, withTrace } from "@/lib/agent/tracer"
 import { labelCharge } from "@/lib/labels"
+import { ensureWallet, refundMoney, spendMoney } from "@/lib/wallet"
 import { buyLabel, getTracking, shippoMode } from "@/lib/shippo"
 import { sendEmail } from "@/lib/resend"
 import { publicIntakePath } from "@/lib/share"
@@ -204,6 +205,33 @@ export async function purchaseLabel(requestId: string): Promise<LabelActionResul
     return { ok: false, error: "Choose a rate before buying the label." }
   }
 
+  /**
+   * Charged on the spot: the studio's prepaid balance must cover the total BEFORE the carrier is
+   * paid. Otherwise a label becomes a debt Muen carries, which is exactly the arrangement this
+   * replaces.
+   */
+  const charge = labelCharge(shipment.amountCents ?? 0, shipment.currency ?? "USD")
+  const [workspaceRow] = await db()
+    .select({ workspaceId: jobs.workspaceId })
+    .from(jobs)
+    .where(eq(jobs.id, request.jobId))
+    .limit(1)
+  const workspaceId = workspaceRow?.workspaceId ?? null
+  if (!workspaceId) return { ok: false, error: "This job has no workspace, so it cannot be charged." }
+
+  await ensureWallet(workspaceId)
+  const paid = await spendMoney(workspaceId, charge.totalCents, "label", {
+    runId: request.jobId,
+    note: `label · ${charge.currency} ${(charge.carrierCents / 100).toFixed(2)} + handling`,
+  })
+  if (!paid.ok) {
+    const short = charge.totalCents - paid.moneyCents
+    return {
+      ok: false,
+      error: `Not enough credit for this label — add $${(short / 100).toFixed(2)} to buy it. Nothing was charged and no label was bought.`,
+    }
+  }
+
   try {
     const bought = await withTrace(
       {
@@ -238,17 +266,11 @@ export async function purchaseLabel(requestId: string): Promise<LabelActionResul
      */
     // `Label` carries the artifact, not the price; the price is what the rate quoted and the
     // shipment stored when it was chosen.
-    const carrierCents = shipment.amountCents ?? 0
-    const charge = labelCharge(carrierCents, shipment.currency ?? "USD")
-    const [workspaceRow] = await db()
-      .select({ workspaceId: jobs.workspaceId })
-      .from(jobs)
-      .where(eq(jobs.id, request.jobId))
-      .limit(1)
+    // `charge` was computed before the gate; nothing to recompute here.
     await db()
       .insert(labelCharges)
       .values({
-        workspaceId: workspaceRow?.workspaceId ?? null,
+        workspaceId,
         jobId: request.jobId,
         requestId,
         carrierCents: charge.carrierCents,
@@ -256,6 +278,7 @@ export async function purchaseLabel(requestId: string): Promise<LabelActionResul
         totalCents: charge.totalCents,
         surchargeRate: charge.rate.toFixed(2),
         currency: charge.currency,
+        status: "charged",
       })
       .catch(() => {
         // A failed charge row must not undo a bought label: the label exists, so the money is spent.
@@ -273,6 +296,8 @@ export async function purchaseLabel(requestId: string): Promise<LabelActionResul
       message: `Label bought — ${bought.carrier || "carrier"}, tracking ${bought.tracking}.`,
     }
   } catch (error) {
+    // The carrier refused, so the label never existed — return the money taken for it.
+    await refundMoney(workspaceId, charge.totalCents, "refund", "label purchase failed").catch(() => {})
     // withTrace recorded the provider/gate error verbatim; surface it as-is.
     return { ok: false, error: messageOf(error) }
   }

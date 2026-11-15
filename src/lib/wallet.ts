@@ -25,6 +25,8 @@ export const WALLET_COST = { render: 1, research: 1, draft: 0 } as const
 export type WalletState = {
   workspaceId: string
   balance: number
+  /** Prepaid money in cents — what a label is paid from, on the spot. */
+  moneyCents: number
   grant: number
   periodStart: string
   plan: string
@@ -82,6 +84,7 @@ export async function ensureWallet(workspaceId: string): Promise<WalletState> {
   return {
     workspaceId,
     balance: row.balance,
+    moneyCents: row.moneyCents,
     grant: row.monthlyGrant,
     periodStart: row.periodStart.toISOString(),
     plan,
@@ -167,4 +170,93 @@ export async function readLedger(workspaceId: string, limit = 20) {
     .where(eq(walletEntries.workspaceId, workspaceId))
     .orderBy(sql`${walletEntries.createdAt} desc`)
     .limit(limit)
+}
+
+/**
+ * Spend prepaid money, or refuse.
+ *
+ * Labels are charged on the spot, so this is the gate that runs BEFORE the carrier is paid: the
+ * conditional UPDATE is what stops two labels being bought against one balance, and a studio with
+ * nothing left is told how much it needs rather than being allowed to run up a debt.
+ */
+export async function spendMoney(
+  workspaceId: string,
+  cents: number,
+  reason: string,
+  detail?: { runId?: string; note?: string },
+): Promise<{ ok: true; moneyCents: number } | { ok: false; reason: "wallet_empty" | "wallet_missing"; moneyCents: number }> {
+  const database = db()
+  const amount = Math.max(0, Math.round(cents))
+
+  const updated = await database
+    .update(wallets)
+    .set({ moneyCents: sql`${wallets.moneyCents} - ${amount}`, updatedAt: sql`now()` })
+    .where(and(eq(wallets.workspaceId, workspaceId), sql`${wallets.moneyCents} >= ${amount}`))
+    .returning({ moneyCents: wallets.moneyCents })
+
+  const [existing] = await database
+    .select({ moneyCents: wallets.moneyCents })
+    .from(wallets)
+    .where(eq(wallets.workspaceId, workspaceId))
+    .limit(1)
+
+  if (updated.length === 0) {
+    return existing
+      ? { ok: false, reason: "wallet_empty", moneyCents: existing.moneyCents }
+      : { ok: false, reason: "wallet_missing", moneyCents: 0 }
+  }
+
+  const moneyCents = updated[0].moneyCents
+  await database.insert(walletEntries).values({
+    workspaceId,
+    delta: -amount,
+    balanceAfter: moneyCents,
+    reason,
+    unit: "cent",
+    runId: detail?.runId ?? null,
+    note: detail?.note ?? null,
+  })
+  return { ok: true, moneyCents }
+}
+
+/** Give money back — a purchase that failed never became a label, so it never becomes a charge. */
+export async function refundMoney(workspaceId: string, cents: number, reason = "refund", note?: string): Promise<number> {
+  const database = db()
+  const amount = Math.max(0, Math.round(cents))
+  const updated = await database
+    .update(wallets)
+    .set({ moneyCents: sql`${wallets.moneyCents} + ${amount}`, updatedAt: sql`now()` })
+    .where(eq(wallets.workspaceId, workspaceId))
+    .returning({ moneyCents: wallets.moneyCents })
+  const moneyCents = updated[0]?.moneyCents ?? 0
+  await database.insert(walletEntries).values({
+    workspaceId,
+    delta: amount,
+    balanceAfter: moneyCents,
+    reason,
+    unit: "cent",
+    note: note ?? null,
+  })
+  return moneyCents
+}
+
+/** Top up prepaid money (manual until Stripe lands). */
+export async function topUpMoney(workspaceId: string, cents: number, note?: string): Promise<number> {
+  const database = db()
+  const amount = Math.max(0, Math.round(cents))
+  const updated = await database
+    .update(wallets)
+    .set({ moneyCents: sql`${wallets.moneyCents} + ${amount}`, updatedAt: sql`now()` })
+    .where(eq(wallets.workspaceId, workspaceId))
+    .returning({ moneyCents: wallets.moneyCents })
+  const moneyCents = updated[0]?.moneyCents ?? 0
+  await database.insert(walletEntries).values({
+    workspaceId,
+    delta: amount,
+    balanceAfter: moneyCents,
+    reason: "top_up",
+    unit: "cent",
+    note: note ?? null,
+  })
+  return moneyCents
 }
