@@ -314,3 +314,46 @@ export const events = pgTable(
   },
   (t) => [index("events_job_idx").on(t.jobId)],
 )
+
+/**
+ * The agent wallet — one per WORKSPACE, shared by every seat in it.
+ *
+ * A studio buys seats, not balances: three stylists drawing from three wallets would mean deciding
+ * who pays for a render before making it. One balance per workspace keeps the purchase decision where
+ * it belongs (the studio) and keeps Stripe simple later — one customer, one subscription, one balance.
+ *
+ * `balance` is in generations, not money. It is an integer because a half render cannot be spent, and
+ * every change goes through `wallet_entries` so a spend can always be traced back to its run.
+ */
+export const wallets = pgTable("wallets", {
+  workspaceId: uuid("workspace_id").primaryKey(),
+  balance: integer("balance").notNull().default(0),
+  /** What a monthly reset puts back — copied from the plan, not derived at read time. */
+  monthlyGrant: integer("monthly_grant").notNull().default(0),
+  /** Start of the current allowance period; a read past 30 days rolls it. */
+  periodStart: timestamp("period_start", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+})
+
+/**
+ * The ledger. One row per movement, carrying the run it paid for, so "where did this month's
+ * generations go" is answerable — and so a failed render can be refunded against its own row.
+ */
+export const walletEntries = pgTable(
+  "wallet_entries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id").notNull(),
+    /** Negative for a spend, positive for a grant, a top-up or a refund. */
+    delta: integer("delta").notNull(),
+    /** The balance after this movement — a running statement the studio can read top to bottom. */
+    balanceAfter: integer("balance_after").notNull(),
+    /** `grant` | `render` | `research` | `refund` | `top_up`. */
+    reason: text("reason").notNull(),
+    /** The canvas run this paid for, when there was one. */
+    runId: uuid("run_id"),
+    note: text("note"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("wallet_entries_workspace_idx").on(t.workspaceId, t.createdAt)],
+)

@@ -3,6 +3,7 @@ import { OrganizationSwitcher, SignOutButton, UserButton } from "@clerk/nextjs"
 
 import { requireStylist } from "@/lib/auth"
 import { AgentProviderBadge } from "@/components/AgentProviderBadge"
+import { ensureWallet } from "@/lib/wallet"
 
 export const metadata = { title: "Pull — dashboard" }
 
@@ -18,7 +19,9 @@ export const metadata = { title: "Pull — dashboard" }
  * have to discover a menu to leave, so a labelled button sits beside the avatar.
  */
 export default async function StudioLayout({ children }: { children: React.ReactNode }) {
-  await requireStylist()
+  const stylist = await requireStylist()
+  // Read (and, on the first visit, create) the workspace wallet. One balance for the whole studio.
+  const wallet = await ensureWallet(stylist.workspaceId).catch(() => null)
 
   return (
     <>
@@ -31,6 +34,14 @@ export default async function StudioLayout({ children }: { children: React.React
             Pull.
           </Link>
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16 }}>
+            {wallet ? (
+              <span
+                className="font-mono text-[11px] tracking-[0.02em] text-muted-foreground"
+                title="Generations left this month, shared by every seat in this studio"
+              >
+                {wallet.balance} / {wallet.grant} generations
+              </span>
+            ) : null}
             <AgentProviderBadge />
             {/* Which studio: switching, creating, inviting. Personal account is the no-org case. */}
             <OrganizationSwitcher
