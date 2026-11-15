@@ -4,7 +4,6 @@
  * Test keys (shippo_test_…) run the whole flow without spending money. SETUP.md step 5.
  */
 import { env } from "./env"
-import { readSecret } from "./secrets"
 
 const BASE = "https://api.goshippo.com"
 
@@ -12,23 +11,10 @@ export function shippoConfigured(): boolean {
   return Boolean(env().SHIPPO_API_KEY)
 }
 
-export function shippoMode(key = env().SHIPPO_API_KEY): "live" | "test" | "off" {
+export function shippoMode(): "live" | "test" | "off" {
+  const key = env().SHIPPO_API_KEY
   if (!key) return "off"
   return key.startsWith("shippo_test_") ? "test" : "live"
-}
-
-/**
- * The key a RUN uses: the studio's own when they have connected one, otherwise the platform's.
- *
- * Studios bring their own shipping account (labels are billed to them, not to Muen), so the key is a
- * workspace secret; the env key stays as the fallback that keeps the demo working without one.
- */
-export async function shippoKeyFor(workspaceId: string | null | undefined): Promise<string | undefined> {
-  if (workspaceId) {
-    const own = await readSecret(workspaceId, "shippo").catch(() => null)
-    if (own) return own
-  }
-  return env().SHIPPO_API_KEY
 }
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {

@@ -13,7 +13,7 @@ Three of the sections below are blocked on credentials, not code. Those are mark
 | field | why |
 |---|---|
 | Studio name | appears on client links and request emails |
-| **Studio address** *(built)* | **blocking for shipping.** Shippo cannot quote a rate without `street1, city, state, zip, country` — the intake page currently answers *"The studio address is incomplete — missing street1, city, zip, country. Rates cannot be quoted until the stylist adds it in the studio settings."* |
+| **Studio address** *(built)* | **blocking for shipping, and studio-owned.** Shippo cannot quote a rate without `street1, city, state, zip, country` — the intake page currently answers *"The studio address is incomplete — missing street1, city, zip, country. Rates cannot be quoted until the stylist adds it in the studio settings."* |
 | Phone | required by carriers on labels |
 | Timezone | dates on requests ("return by") are computed server-side |
 
@@ -39,35 +39,42 @@ What costs what, stated on the page rather than discovered: render 1, research 1
 
 ## 4. Integrations
 
-Each row: label, state (`connected` / `not set` / `failing`), last 4 characters, "Test connection",
-and a write-only field. Secrets are never returned to the browser — the field is blank until replaced,
-and saving is the only way to change it.
+**These are Muen's accounts, not the studio's.** A studio never pastes a provider key: Muen holds the
+Shippo, Resend, Cloudinary and ZooWork accounts, and every workspace draws on them. So integrations are
+not a studio setting at all — they belong to an **internal ops view** that shows each provider's state
+(`connected` / `not set` / `failing`), the environment it resolved from, and a "test connection" that
+runs the same check a run would. A studio sees, at most, whether shipping is available.
+
+This also decides who carries the cost: **Muen buys every label**. That has to be metered (see §3) or a
+busy studio's labels quietly become Muen's expense.
 
 | integration | what breaks without it |
 |---|---|
-| **Shipping (Shippo)** | no rates, no labels. Needs the key **and** a complete studio address |
+| **Shipping (Shippo)** | no rates, no labels. Needs Muen's key **and** a complete studio address |
 | Email (Resend) | request emails stay drafts |
 | Images (Cloudinary) | boards fall back to local storage |
 | Agent (ZooWork) + PRISM sink | renders fall back to sample output; runs are not mirrored |
 
 ### Storage
 
-Secrets belong in a `workspace_secrets` table, one row per (workspace, provider), value encrypted at
-rest with AES-256-GCM (`SETTINGS_SECRET` env as the key), never selected into a client component.
-Platform env keys remain the fallback so the demo keeps working without a studio's own account.
+Platform env vars (`SHIPPO_API_KEY`, `RESEND_API_KEY`, `CLOUDINARY_*`, `ZOOWORK_API_KEY`). No
+per-workspace credentials table: there is no studio-owned secret to store, and an encrypted table of
+them would exist only to be unused.
 
-### The agent and the developer account — what is actually possible
+### Who creates the developer account
 
-An agent **cannot** create a Shippo account. Signup needs an email verification link and, for live
-labels, card details; neither can be done on someone's behalf. What it can do, honestly:
+**Muen's developer**, once — not each studio, and not an agent. An agent cannot complete a provider
+signup (email verification, CAPTCHA, card details); it can pre-fill a form and verify the resulting key,
+nothing more. So the honest flow is:
 
-1. open the signup page and pre-fill the studio's details;
-2. stop and ask the person to verify the email and reach the API-keys page;
-3. take the **test** key, call `GET /v1/shippo-addresses` with it to prove the key works, then quote a
-   real rate from this studio's address to a sample showroom;
-4. write the key only after that round trip succeeds, so "connected" means connected.
+1. a Muen person creates the Shippo account and takes a **test** key;
+2. the key goes into Vercel's environment, never into a settings field;
+3. the ops view runs `GET /v1/carrier_accounts` with it and reports the state;
+4. a real rate is quoted from a studio's address to a sample showroom — the only proof that shipping
+   works end to end.
 
-Recorded as a job on the page ("Set up shipping"), not as a magic button.
+The agent's job is step 3 and 4 (verification), plus telling the person exactly which page to open for
+step 1.
 
 ## 5. Client links
 
@@ -113,9 +120,20 @@ A studio that misses "label came back" loses a shipping day.
 
 ## Build order
 
-1. **Studio address + shipping key together** — the address already exists, the key does not, and
-   neither is useful alone. Highest value, no new decisions.
+1. **Studio address** *(built)* — the studio's own half of shipping. The other half is Muen's: a key in
+   the environment plus an ops check, not a field on this page.
 2. **Wallet statement + low-balance alert** — the wallet exists; the page just has to show it.
 3. **Appearance** — after the kit's dark defect is fixed.
 4. **Team and seats** — needs the Clerk organization invitation flow wired to seat counts.
 5. **Top up** — blocked on Stripe.
+
+---
+
+## Correction (2026-11-14)
+
+An earlier draft of this page gave each studio a field for its own Shippo key. That was wrong about the
+architecture: **the integrations are Muen's backend.** The shipping-key field, the encrypted
+`workspace_secrets` table and the per-workspace override in `lib/shippo.ts` were built and then removed
+in the same day — the table is dropped from the database. What survives is the part that was always
+true: the studio owns its **address**, Muen owns the accounts, and the wallet has to carry the label
+cost because Muen pays it.

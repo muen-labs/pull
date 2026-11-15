@@ -357,26 +357,3 @@ export const walletEntries = pgTable(
   },
   (t) => [index("wallet_entries_workspace_idx").on(t.workspaceId, t.createdAt)],
 )
-
-/**
- * Per-workspace provider credentials.
- *
- * A studio connects its OWN shipping account, so the key belongs to the workspace, not the platform.
- * It is stored encrypted (`src/lib/secrets.ts`) and only ever read on the server: the settings page
- * shows a last-4 and a state, never the value. Platform env keys remain the fallback, so the demo
- * works without a studio's own account and nothing has to be migrated.
- */
-export const workspaceSecrets = pgTable(
-  "workspace_secrets",
-  {
-    workspaceId: uuid("workspace_id").notNull(),
-    /** `shippo` | `resend` | `cloudinary` | `zoowork`. */
-    provider: text("provider").notNull(),
-    /** AES-256-GCM: `iv.tag.ciphertext`, all base64. Never selected into a client component. */
-    ciphertext: text("ciphertext").notNull(),
-    /** Last four characters, so the page can say WHICH key is connected without revealing it. */
-    last4: text("last4").notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-  },
-  (t) => [uniqueIndex("workspace_secrets_provider_idx").on(t.workspaceId, t.provider)],
-)
