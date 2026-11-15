@@ -53,6 +53,8 @@ export interface LabelPanelState {
   labelEmail: LabelPanelEmail | null
   mode: "live" | "test" | "off"
   purchaseGate: { enabled: boolean; reason: string | null }
+  /** Prepaid credit, in cents — the money a label is paid from, on the spot. */
+  moneyCents: number
 }
 
 function messageOf(error: unknown): string {
@@ -77,6 +79,9 @@ export async function getLabelPanelState(requestId: string): Promise<LabelPanelS
   if (!request) return null
   const [job] = await db().select().from(jobs).where(eq(jobs.id, request.jobId)).limit(1)
   if (!job) return null
+
+  // The studio pays for the label, so the panel has to show what it can pay from.
+  const wallet = await ensureWallet(job.workspaceId).catch(() => null)
 
   const [contact] = request.contactId
     ? await db().select().from(contacts).where(eq(contacts.id, request.contactId)).limit(1)
@@ -126,6 +131,7 @@ export async function getLabelPanelState(requestId: string): Promise<LabelPanelS
       : null,
     mode: shippoMode(),
     purchaseGate: purchaseGate(),
+    moneyCents: wallet?.moneyCents ?? 0,
   }
 }
 

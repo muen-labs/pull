@@ -146,6 +146,10 @@ export async function LabelPanel({ requestId }: { requestId: string }) {
                 {/* The split, before the click: the carrier's price and Pull's 15% handling. A
                     surcharge a studio only meets on an invoice is the fastest way to lose one. */}
                 <p className="small" style={{ margin: "8px 0 0" }}>
+                  Claimed on the spot from your credit ·{" "}
+                  {formatMoney(state.moneyCents / 100, chosenRate.currency)}
+                </p>
+                <p className="small" style={{ margin: "8px 0 0" }}>
                   {formatMoney(chosenRate.amount, chosenRate.currency)} label +{" "}
                   {formatMoney(labelCharge(chosenRate.amount, chosenRate.currency).surchargeCents / 100, chosenRate.currency)}{" "}
                   handling ={" "}
