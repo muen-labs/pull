@@ -26,6 +26,8 @@ interface Plan {
   annual: number | null
   /** What one seat buys, said plainly. */
   seats: string
+  /** What the price buys, for the line after it: "1 seat", "4 seats". */
+  per: string
   features: string[]
   cta: "start" | "talk"
 }
@@ -38,6 +40,7 @@ const PLANS: Plan[] = [
     monthly: 29,
     annual: 24,
     seats: "1 seat",
+    per: "1 seat",
     features: [
       "One seat — the stylist who signs in",
       "Unlimited jobs and looks",
@@ -49,11 +52,13 @@ const PLANS: Plan[] = [
   {
     id: "studio",
     name: "Studio",
-    blurb: "The studio, with the shipping.",
+    blurb: "Four seats, with the shipping.",
     monthly: 59,
     annual: 49,
-    seats: "per seat",
+    seats: "4 seats",
+    per: "4 seats",
     features: [
+      "Four seats — the founder and three assistants",
       "Everything in Solo",
       "Showroom links, parcel sizes and labels",
       "The contacts book, with agent matching",
@@ -68,6 +73,7 @@ const PLANS: Plan[] = [
     monthly: null,
     annual: null,
     seats: "custom",
+    per: "custom",
     features: [
       "Everything in Studio",
       "Single sign-on",
@@ -200,7 +206,7 @@ export function Pricing() {
                 </span>
                 {price !== null ? (
                   <span className="text-[13px] text-muted-foreground">
-                    / seat / {annual ? "mo, billed yearly" : "mo"}
+                    / {plan.per} / {annual ? "mo, billed yearly" : "mo"}
                   </span>
                 ) : null}
               </p>
