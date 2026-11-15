@@ -291,7 +291,7 @@
      "name": "images.image_1",
      "shape": 7,
      "type": "IMAGE",
-     "link": 110,
+     "link": 80,
      "localized_name": "IMAGE_1"
     },
     {
@@ -326,7 +326,7 @@
      "name": "images.image_2",
      "shape": 7,
      "type": "IMAGE",
-     "link": 80,
+     "link": 110,
      "localized_name": "IMAGE_2"
     },
     {
@@ -2985,7 +2985,7 @@
    48,
    0,
    32,
-   6,
+   2,
    "IMAGE"
   ],
   [
@@ -3057,7 +3057,7 @@
    75,
    0,
    32,
-   2,
+   6,
    "IMAGE"
   ],
   [
