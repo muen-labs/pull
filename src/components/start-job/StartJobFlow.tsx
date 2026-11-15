@@ -28,22 +28,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
 import { AgentTrace } from "@/components/AgentTrace"
 import { clearStoredBoard, readStoredBoard, storeBoard, type StoredBoard } from "@/lib/board-store"
-import {
-  DEFAULT_OCCASION,
-  OCCASION_OPTIONS,
-  type OccasionKey,
-  type Register,
-} from "@/lib/agent/skills/occasion"
-import {
-  PRESENTATION_OPTIONS,
-  REGISTER_OPTIONS,
-  splitBrands,
-  type Presentation,
-} from "@/lib/agent/skills/record"
 import type { AgentStep } from "@/lib/agent/trace"
 import { ingestLook } from "./ingest"
 import { suggestionId, type Look } from "./ReviewBoard"
@@ -82,7 +68,6 @@ interface SuggestLooksResponse {
   clientName: string
   gender: { value: "male" | "female" | "unknown"; evidence: string; sourceUrl: string }
   season: { slug: string; label: string; url: string }
-  occasion: { key: OccasionKey; label: string; formality: number }
   designers: ApiDesigner[]
   trace: SuggestStep[]
   hasMore: boolean
@@ -164,26 +149,6 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
   const [clientName, setClientName] = useState("")
   const [contactEmail, setContactEmail] = useState("")
   const [deliveryDate, setDeliveryDate] = useState("")
-  /** What the looks are for. Red carpet is the most formal; personal the most casual. */
-  const [occasion, setOccasion] = useState<OccasionKey>(DEFAULT_OCCASION)
-  /** Presentation picks the runway rail; "unknown" lets the name research decide. */
-  const [presentation, setPresentation] = useState<Presentation>("unknown")
-  /** Latest collection, or the in-store season for the delivery date. */
-  const [seasonMode, setSeasonMode] = useState<"latest" | "delivery">("latest")
-  const [styleBrief, setStyleBrief] = useState("")
-
-  /** The client record — researched from the web first, then corrected by the stylist. */
-  const [recordOpen, setRecordOpen] = useState(false)
-  const [researching, setResearching] = useState(false)
-  const [brandsWornText, setBrandsWornText] = useState("")
-  const [brandsAvoidText, setBrandsAvoidText] = useState("")
-  const [recordRegister, setRecordRegister] = useState<Register | "">("")
-  const [recordRegisters, setRecordRegisters] = useState<string[]>([])
-  const [recordSilhouettes, setRecordSilhouettes] = useState<string[]>([])
-  const [recordNotes, setRecordNotes] = useState("")
-  const [recordSources, setRecordSources] = useState<{ label: string; url: string }[]>([])
-  const [recordProvider, setRecordProvider] = useState<string | null>(null)
-  const [recordWarning, setRecordWarning] = useState<string | null>(null)
 
   const [looks, setLooks] = useState<Look[]>([])
   const [suggested, setSuggested] = useState<Look[]>([])
@@ -234,21 +199,6 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
     setClientName("")
     setContactEmail("")
     setDeliveryDate("")
-    setOccasion(DEFAULT_OCCASION)
-    setPresentation("unknown")
-    setSeasonMode("latest")
-    setStyleBrief("")
-    setRecordOpen(false)
-    setResearching(false)
-    setBrandsWornText("")
-    setBrandsAvoidText("")
-    setRecordRegister("")
-    setRecordRegisters([])
-    setRecordSilhouettes([])
-    setRecordNotes("")
-    setRecordSources([])
-    setRecordProvider(null)
-    setRecordWarning(null)
     setNote(null)
     setProgress(null)
     setSuggestMeta(null)
@@ -273,98 +223,10 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
     })
   }, [])
 
-  /** The record/brief block every research run sends. */
-  const researchPayload = useMemo(
-    () => ({
-      presentation,
-      seasonMode,
-      deliveryDate,
-      styleBrief,
-      record: {
-        brandsWorn: splitBrands(brandsWornText),
-        brandsAvoid: splitBrands(brandsAvoidText),
-        registers: [...recordRegisters, ...(recordRegister ? [recordRegister] : [])],
-        silhouettes: recordSilhouettes,
-      },
-    }),
-    [
-      presentation,
-      seasonMode,
-      deliveryDate,
-      styleBrief,
-      brandsWornText,
-      brandsAvoidText,
-      recordRegisters,
-      recordRegister,
-      recordSilhouettes,
-    ],
-  )
-
-  /**
-   * Research the client from Vogue's own coverage, then let the stylist correct it. The draft fills
-   * the record panel; nothing reaches the board until Build board.
-   */
-  const researchClient = useCallback(async () => {
-    const client = clientName.trim()
-    if (!client) {
-      setNote("Add the client's name first — research starts there.")
-      return
-    }
-    setResearching(true)
-    setRecordWarning(null)
-    try {
-      const response = await fetch("/api/skills/client-record", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ clientName: client, occasion }),
-      })
-      const data = (await response.json().catch(() => ({}))) as {
-        record?: {
-          presentation?: Presentation
-          brandsWorn?: { brand: string; note?: string }[]
-          registers?: string[]
-          silhouettes?: string[]
-          notes?: string
-        }
-        sources?: { label: string; url: string }[]
-        provider?: string
-        warning?: string
-        error?: string
-      }
-      if (!response.ok) throw new Error(data.error ?? "The research run failed.")
-      const record = data.record ?? {}
-      setRecordOpen(true)
-      setRecordProvider(data.provider ?? null)
-      setRecordSources(data.sources ?? [])
-      setRecordWarning(data.warning ?? null)
-      setRecordNotes(record.notes ?? "")
-      setRecordRegisters(record.registers ?? [])
-      setRecordSilhouettes(record.silhouettes ?? [])
-      if (record.brandsWorn?.length) {
-        setBrandsWornText(record.brandsWorn.map((brand) => brand.brand).join(", "))
-      }
-      if (record.presentation && record.presentation !== "unknown" && presentation === "unknown") {
-        setPresentation(record.presentation)
-      }
-    } catch (error) {
-      setNote(error instanceof Error ? error.message : "Could not research the client.")
-    } finally {
-      setResearching(false)
-    }
-  }, [clientName, occasion, presentation])
-
   /** The research run, streamed: each house is shown as it lands instead of after the slowest one. */
   const streamResearch = useCallback(
     async (
       client: string,
-      occasion: OccasionKey,
-      brief: {
-        presentation: Presentation
-        seasonMode: "latest" | "delivery"
-        deliveryDate: string
-        styleBrief: string
-        record: { brandsWorn: string[]; brandsAvoid: string[]; registers: string[]; silhouettes: string[] }
-      },
       offset: number,
       limit: number,
       on: { step?: (step: SuggestStep) => void; designer?: (designer: ApiDesigner) => void },
@@ -372,7 +234,7 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
       const response = await fetch("/api/skills/suggest-looks", {
         method: "POST",
         headers: { "content-type": "application/json", accept: "application/x-ndjson" },
-        body: JSON.stringify({ clientName: client, occasion, ...brief, offset, limit, stream: true }),
+        body: JSON.stringify({ clientName: client, offset, limit, stream: true }),
       })
       if (!response.ok || !response.body) {
         const error = (await response.json().catch(() => ({}))) as { error?: string }
@@ -412,7 +274,6 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
     researchInFlight.current = true
     const client = clientName.trim()
     if (!client) {
-      researchInFlight.current = false
       setNote("Add the client's name first — the research starts there.")
       return
     }
@@ -425,7 +286,7 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
     setDesignerCount(0)
     setReserve({})
     try {
-      const data = await streamResearch(client, occasion, researchPayload, 0, 10, {
+      const data = await streamResearch(client, 0, 10, {
         step: (step) => setSuggestTrace((current) => appendStep(current, step)),
         designer: (designer) => {
           setSuggested((current) => [...current, ...looksFromDesigners([designer])])
@@ -442,7 +303,7 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
       researchInFlight.current = false
       setLoadingSuggestions(false)
     }
-  }, [clientName, loadingSuggestions, occasion, researchPayload, streamResearch])
+  }, [clientName, loadingSuggestions, streamResearch])
 
   /** Work the queue: one look at a time, on screen, with its real durations. */
   const processQueue = useCallback(async (queue: Look[]) => {
@@ -474,6 +335,10 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
     setProgress(null)
   }, [])
 
+  /**
+   * Removing a suggested look refills its row from the same collection. The route sends six spare
+   * looks per designer, so the board keeps five looks per house instead of thinning out on stage.
+   */
   /** More designers, five at a time, five looks each — a house is one row. */
   const suggestMore = useCallback(async () => {
     if (moreLoading || !suggestMeta?.hasMore || researchInFlight.current) return
@@ -484,7 +349,7 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
     setNote(null)
     const added: Look[] = []
     try {
-      const data = await streamResearch(client, occasion, researchPayload, designerCount, 5, {
+      const data = await streamResearch(client, designerCount, 5, {
         step: (step) => setSuggestTrace((current) => appendStep(current, step)),
         designer: (designer) => {
           const fresh = looksFromDesigners([designer])
@@ -511,7 +376,7 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
       researchInFlight.current = false
       setMoreLoading(false)
     }
-  }, [clientName, designerCount, moreLoading, occasion, processQueue, researchPayload, streamResearch, suggestMeta?.hasMore])
+  }, [clientName, designerCount, moreLoading, processQueue, streamResearch, suggestMeta?.hasMore])
 
   const pool = useMemo(() => [...looks, ...suggested], [looks, suggested])
 
@@ -522,20 +387,6 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
     if (!canBuild) return
     storeBoard({
       job: { title: jobName, description: clientName, email: contactEmail, dueDate: deliveryDate },
-      occasion,
-      presentation,
-      seasonMode,
-      styleBrief,
-      record: {
-        brandsWorn: brandsWornText,
-        brandsAvoid: brandsAvoidText,
-        register: recordRegister,
-        registers: recordRegisters,
-        silhouettes: recordSilhouettes,
-        notes: recordNotes,
-        sources: recordSources,
-        provider: recordProvider,
-      },
       looks: pool
         .filter((look) => typeof look.source === "string")
         .map((look) => ({
@@ -557,28 +408,7 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
     // the site chrome and leaving no way back to the demo.
     router.push("/board")
     void processQueue(pool)
-  }, [
-    brandsAvoidText,
-    brandsWornText,
-    canBuild,
-    contactEmail,
-    clientName,
-    deliveryDate,
-    jobName,
-    occasion,
-    pool,
-    presentation,
-    processQueue,
-    recordNotes,
-    recordProvider,
-    recordRegister,
-    recordRegisters,
-    recordSilhouettes,
-    recordSources,
-    seasonMode,
-    styleBrief,
-    router,
-  ])
+  }, [canBuild, contactEmail, clientName, deliveryDate, jobName, pool, processQueue, router])
 
   const trigger =
     kind === "nav" ? (
@@ -616,24 +446,6 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
                 autoFocus
               />
             </div>
-            <div className="flex flex-col gap-2 sm:col-span-2">
-              <Label htmlFor="occasion">Occasion</Label>
-              <Select value={occasion} onValueChange={(value) => setOccasion(value as OccasionKey)}>
-                <SelectTrigger id="occasion" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {OCCASION_OPTIONS.map((option) => (
-                    <SelectItem key={option.key} value={option.key}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-[11px] text-muted-foreground">
-                Red carpet is the most formal; personal the most casual.
-              </p>
-            </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="client-name">Client name</Label>
               <Input
@@ -653,35 +465,8 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
                 placeholder="agent@example.com"
               />
             </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="presentation">Presentation</Label>
-              <Select value={presentation} onValueChange={(value) => setPresentation(value as Presentation)}>
-                <SelectTrigger id="presentation" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PRESENTATION_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="season-mode">Collection</Label>
-              <Select value={seasonMode} onValueChange={(value) => setSeasonMode(value as "latest" | "delivery")}>
-                <SelectTrigger id="season-mode" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="latest">Latest collection</SelectItem>
-                  <SelectItem value="delivery">Delivery date</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
             <div className="flex flex-col gap-2 sm:col-span-2">
-              <Label htmlFor="delivery-date">Delivery date</Label>
+              <Label htmlFor="delivery-date">Due date</Label>
               <DatePicker
                 id="delivery-date"
                 value={deliveryDate}
@@ -689,134 +474,7 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
                 placeholder="Pick a delivery date"
                 aria-label="Delivery date"
               />
-              {seasonMode === "delivery" && !deliveryDate ? (
-                <p className="text-[11px] text-muted-foreground">
-                  Add the date the looks are needed — the in-store collection comes from it.
-                </p>
-              ) : null}
             </div>
-            <div className="flex flex-col gap-2 sm:col-span-2">
-              <Label htmlFor="style-brief">Style brief (optional)</Label>
-              <Textarea
-                id="style-brief"
-                value={styleBrief}
-                onChange={(event) => setStyleBrief(event.target.value)}
-                rows={2}
-                placeholder="e.g. sharp black tailoring, oversized outerwear, no logos"
-              />
-            </div>
-          </div>
-
-          {/* The client record: researched from the web first, corrected here. */}
-          <div className="rounded-lg border border-border">
-            <button
-              type="button"
-              onClick={() => setRecordOpen((current) => !current)}
-              aria-expanded={recordOpen}
-              className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
-            >
-              <span className="flex flex-col gap-0.5">
-                <span className="text-[13px] font-medium text-foreground">Client record</span>
-                <span className="text-[11px] text-muted-foreground">
-                  Optional — research fills it from Vogue, then you correct it.
-                </span>
-              </span>
-              <span className="text-[11px] text-muted-foreground">{recordOpen ? "hide" : "open"}</span>
-            </button>
-            {recordOpen ? (
-              <div className="flex flex-col gap-4 border-t border-border px-4 py-4">
-                <div className="flex flex-wrap items-center gap-3">
-                  <Button
-                    variant="ghost"
-                    className="agent-action"
-                    onClick={() => void researchClient()}
-                    disabled={researching || !clientName.trim()}
-                  >
-                    <Sparkles className="size-4" aria-hidden />
-                    {researching ? "Researching…" : "Research client"}
-                  </Button>
-                  {recordProvider || recordSources.length ? (
-                    <span className="text-[11px] text-muted-foreground">
-                      draft · {recordSources.length} source{recordSources.length === 1 ? "" : "s"}
-                      {recordProvider && recordProvider !== "none" ? ` · ${recordProvider}` : ""}
-                    </span>
-                  ) : null}
-                </div>
-                {recordWarning ? (
-                  <p className="text-[11px] text-[var(--warning)]">{recordWarning}</p>
-                ) : null}
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="brands-worn">Brands worn</Label>
-                    <Input
-                      id="brands-worn"
-                      value={brandsWornText}
-                      onChange={(event) => setBrandsWornText(event.target.value)}
-                      placeholder="Givenchy, Prada, Chrome Hearts"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="brands-avoid">Brands to avoid</Label>
-                    <Input
-                      id="brands-avoid"
-                      value={brandsAvoidText}
-                      onChange={(event) => setBrandsAvoidText(event.target.value)}
-                      placeholder="e.g. Prada"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2 sm:col-span-2">
-                    <Label htmlFor="record-register">Register (optional)</Label>
-                    <Select
-                      value={recordRegister || "none"}
-                      onValueChange={(value) =>
-                        setRecordRegister(value === "none" ? "" : (value as Register))
-                      }
-                    >
-                      <SelectTrigger id="record-register" className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Not set</SelectItem>
-                        {REGISTER_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                {recordNotes ? (
-                  <p className="text-[12px] leading-relaxed text-muted-foreground">{recordNotes}</p>
-                ) : null}
-                {recordRegisters.length ? (
-                  <p className="text-[11px] text-muted-foreground">Read as · {recordRegisters.join(" · ")}</p>
-                ) : null}
-                {recordSilhouettes.length ? (
-                  <p className="text-[11px] text-muted-foreground">
-                    Silhouettes · {recordSilhouettes.join(" · ")}
-                  </p>
-                ) : null}
-                {recordSources.length ? (
-                  <p className="text-[11px] leading-relaxed text-muted-foreground">
-                    Sources ·{" "}
-                    {recordSources.slice(0, 4).map((source, index) => (
-                      <span key={source.url}>
-                        {index ? " · " : ""}
-                        <a
-                          href={source.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="underline underline-offset-2"
-                        >
-                          {source.label}
-                        </a>
-                      </span>
-                    ))}
-                  </p>
-                ) : null}
-              </div>
-            ) : null}
           </div>
 
           <div
@@ -913,10 +571,6 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
                       >
                         {suggestMeta.gender.evidence}
                       </a>
-                      <p className="text-[12px] text-muted-foreground">
-                        occasion read as{" "}
-                        <span className="font-medium text-foreground">{suggestMeta.occasion.label}</span>
-                      </p>
                       <a
                         href={suggestMeta.season.url}
                         target="_blank"
@@ -994,34 +648,19 @@ export function StartJobFlow({ kind }: { kind: "nav" | "hero" }) {
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
             <Button
               variant="ghost"
-              className="agent-action h-11 gap-2 px-5 text-[15px] font-medium"
-              data-running={loadingSuggestions ? "true" : "false"}
+              className="agent-action"
               onClick={() => void suggestLooks()}
               disabled={loadingSuggestions}
-              title="Seeds the board from the client and the occasion"
+              title="Seeds the board with menswear picks"
             >
               <Sparkles className="size-4" aria-hidden />
-              {/* The label is an element so it sits above the race's inset body, like the icon. */}
-              <span>{loadingSuggestions ? "Finding looks…" : "Suggest looks"}</span>
+              {loadingSuggestions ? "Finding looks…" : "Suggest looks"}
             </Button>
             <div className="flex items-center gap-2">
-              {/* The footer states its hierarchy through the primitives: Cancel is the outline
-                  (secondary) and Build board the ink primary. `ghost` made Cancel read as a label.
-                  Both take the pill geometry and 44px height of the agent action beside them, so the
-                  row reads as one family rather than two button systems. */}
               <DialogClose asChild>
-                <Button
-                  variant="outline"
-                  className="h-11 rounded-full px-5 text-[15px] font-medium"
-                >
-                  Cancel
-                </Button>
+                <Button variant="ghost">Cancel</Button>
               </DialogClose>
-              <Button
-                className="h-11 rounded-full px-5 text-[15px] font-medium"
-                onClick={buildBoard}
-                disabled={!canBuild}
-              >
+              <Button onClick={buildBoard} disabled={!canBuild}>
                 Build board
               </Button>
             </div>

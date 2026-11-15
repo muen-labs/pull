@@ -703,12 +703,7 @@ export function StudioCanvas({
 
     if (failed) {
       // A demo that dead-ends is worse than a labelled fallback: keep the graph, say so.
-      // A wallet refusal is not a provider outage: say which one it is, and what clears it.
-      setStubNote(
-        failed.reason.startsWith("Wallet empty")
-          ? `${failed.reason} · top up to keep rendering.`
-          : `provider unavailable — ${failed.reason}`,
-      )
+      setStubNote(`provider unavailable — ${failed.reason}`)
       setAssets((current) => (current.length > 0 ? current : sampleAssets))
       // A call that never returned is still a call PRISM/the widget should account for.
       setPrismCalls((current) =>

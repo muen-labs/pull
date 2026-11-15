@@ -27,12 +27,7 @@ type Point = { x: number; y: number }
 
 // Marker red: the status red at near-full strength. It marks a photograph,
 // never a button — red stays a status colour in the chrome.
-/** The pen colour from the theme (`--markup`), so the client's mark and the studio agree by token. */
-function markupInk(): string {
-  if (typeof window === "undefined") return "#d4007a"
-  const token = getComputedStyle(document.documentElement).getPropertyValue("--markup").trim()
-  return token || "#d4007a"
-}
+const INK = "rgba(179, 38, 30, 0.92)"
 const INK_WIDTH = 5
 
 function trace(ctx: CanvasRenderingContext2D, stroke: Point[]) {
@@ -40,16 +35,14 @@ function trace(ctx: CanvasRenderingContext2D, stroke: Point[]) {
     const [dot] = stroke
     ctx.beginPath()
     ctx.arc(dot.x, dot.y, INK_WIDTH / 2, 0, Math.PI * 2)
-    ctx.fillStyle = markupInk()
-    ctx.globalAlpha = 0.92
+    ctx.fillStyle = INK
     ctx.fill()
     return
   }
   ctx.beginPath()
   ctx.lineJoin = "round"
   ctx.lineCap = "round"
-  ctx.strokeStyle = markupInk()
-  ctx.globalAlpha = 0.92
+  ctx.strokeStyle = INK
   ctx.lineWidth = INK_WIDTH
   ctx.moveTo(stroke[0].x, stroke[0].y)
   for (const point of stroke.slice(1)) ctx.lineTo(point.x, point.y)

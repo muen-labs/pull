@@ -1,7 +1,5 @@
 "use client"
 
-import type { OccasionKey } from "@/lib/agent/skills/occasion"
-import type { Presentation } from "@/lib/agent/skills/record"
 import type { Look } from "@/components/start-job/ReviewBoard"
 
 /**
@@ -19,8 +17,6 @@ export const BOARD_KEY = "pull.board.v1"
 
 export interface StoredBoard {
   job: { title: string; description: string; email: string; dueDate: string }
-  /** The occasion the board was researched for; a reload keeps the same brief. */
-  occasion?: OccasionKey
   looks: Look[]
   /**
    * The spares each house still holds from its collection, keyed by brand. Carried with the board
@@ -29,23 +25,6 @@ export interface StoredBoard {
    * and stayed disabled.
    */
   reserve?: Record<string, Look[]>
-  /** How the client presents, as the form narrowed the research. */
-  presentation?: Presentation
-  /** "latest" reads the newest season; "delivery" picks the one nearest the shoot date. */
-  seasonMode?: "latest" | "delivery"
-  /** The stylist's own words about the look, passed straight to the research. */
-  styleBrief?: string
-  /** The corrected client record, kept as the strings the form edits. */
-  record?: {
-    brandsWorn: string
-    brandsAvoid: string
-    register: string
-    registers: string[]
-    silhouettes: string[]
-    notes: string
-    sources: { label: string; url: string }[]
-    provider: string | null
-  }
 }
 
 export function storeBoard(board: StoredBoard) {

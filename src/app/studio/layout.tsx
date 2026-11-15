@@ -1,57 +1,27 @@
 import Link from "next/link"
-import { OrganizationSwitcher, SignOutButton, UserButton } from "@clerk/nextjs"
-
 import { requireStylist } from "@/lib/auth"
+import { SignOutButton } from "@clerk/nextjs"
 import { AgentProviderBadge } from "@/components/AgentProviderBadge"
-import { ensureWallet } from "@/lib/wallet"
 
 export const metadata = { title: "Pull — dashboard" }
 
-/**
- * Dashboard shell: the wordmark, which studio you are in, and three ways out of the session.
- *
- * The header is a LIGHT hairline bar, not the client page's dark material (`.client-top`): the studio
- * is the editorial surface, and the dark header put the ink wordmark on a dark ground — "Pull." was
- * black on near-black. It is sticky at `top: 0`, so it must be the first thing in the flow: the demo
- * guide is suppressed on `/studio` for exactly that reason (it narrated the acts and sat above this).
- *
- * Sign-out is stated, not implied. `<UserButton />` holds it in its menu, but a stylist should not
- * have to discover a menu to leave, so a labelled button sits beside the avatar.
- */
+/** Dashboard shell: the wordmark, who is signed in, and a way out. Nothing else competes. */
 export default async function StudioLayout({ children }: { children: React.ReactNode }) {
   const stylist = await requireStylist()
-  // Read (and, on the first visit, create) the workspace wallet. One balance for the whole studio.
-  const wallet = await ensureWallet(stylist.workspaceId).catch(() => null)
 
   return (
     <>
-      <header
-        style={{ position: "sticky", top: 0, zIndex: 20 }}
-        className="border-b border-border bg-background/90 backdrop-blur-sm"
-      >
+      <header className="client-top" style={{ position: "sticky", top: 0, zIndex: 20 }}>
         <div className="container" style={{ display: "flex", alignItems: "center", gap: 24, height: 64 }}>
           <Link href="/studio" className="wordmark">
             Pull.
           </Link>
-          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16 }}>
-            {wallet ? (
-              <span
-                className="font-mono text-[11px] tracking-[0.02em] text-muted-foreground"
-                title="Generations left this month, shared by every seat in this studio"
-              >
-                {wallet.balance} / {wallet.grant} generations
-              </span>
-            ) : null}
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14 }}>
             <AgentProviderBadge />
-            {/* Which studio: switching, creating, inviting. Personal account is the no-org case. */}
-            <OrganizationSwitcher
-              hidePersonal={false}
-              appearance={{ elements: { rootBox: "flex items-center" } }}
-            />
-            {/* The avatar menu: manage account. */}
-            <UserButton />
-            {/* The exit, stated. */}
-            <SignOutButton redirectUrl="/sign-in">
+            <span className="mono" style={{ color: "var(--muted-foreground-soft)" }}>
+              {stylist.email}
+            </span>
+            <SignOutButton>
               <button type="button" className="btn btn-ghost btn-sm">
                 Sign out
               </button>

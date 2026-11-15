@@ -1,6 +1,5 @@
 "use client"
 
-import { useRouter } from "next/navigation"
 /**
  * The review board — job header, looks grouped by house, and the shortlist rail.
  *
@@ -10,15 +9,13 @@ import { useRouter } from "next/navigation"
  *
  * Type: one typeface throughout, per Juje. No mono.
  */
-import { useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from "react"
+import { useEffect, useMemo, useState, type ReactNode } from "react"
 import { Check, Plus, RotateCcw, Sparkles, Trash2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { readBoardTaste, type TasteTraits } from "@/lib/taste"
 import type { IngestStep } from "./ingest"
-import Link from "next/link"
-import { storeBoard } from "@/lib/board-store"
 
 export type LookStatus = "queued" | "cropping" | "reading" | "ready" | "error"
 
@@ -70,68 +67,9 @@ function formatDue(iso: string): string {
   return date.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
 }
 
-/**
- * A layout effect that is honest on the server too: the sheet only mounts in the browser, but the
- * board it renders is part of the SSR HTML when a stored board is restored, so the server pass must
- * not warn about `useLayoutEffect`.
- */
-const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect
-
-/**
- * The sheet sits below the site chrome rather than over it.
- *
- * The demo guide (board / approval / intake) and the site header are the chrome that has to survive
- * every screen, and a `fixed inset-0` panel covered both. Measuring the chrome's bottom and starting
- * the sheet there keeps the real guide and header on screen — the same top the board has at `/board`
- * — and pinning the page underneath stops the chrome scrolling away while the board is open.
- */
-function useSheetChromeTop(enabled: boolean): number {
-  const [top, setTop] = useState(0)
-
-  useIsomorphicLayoutEffect(() => {
-    if (!enabled) return
-    const guide = document.querySelector(".demo-guide")
-    const header = document.querySelector("[data-site-header]")
-    const measure = () => {
-      const guideBottom = guide?.getBoundingClientRect().bottom ?? 0
-      const headerBottom = header?.getBoundingClientRect().bottom ?? 0
-      setTop(Math.round(Math.max(0, guideBottom, headerBottom)))
-    }
-
-    // The chrome sits in the page flow, so it is only readable (and only visible above the sheet)
-    // from scroll zero. Pin the page there while the sheet is open — the sheet is its own scroll
-    // container. A scroll listener catches the start-job dialog's own scroll lock, which restores
-    // the previous scroll position when it unmounts, after this effect has already run.
-    const pin = () => {
-      if (window.scrollY !== 0) window.scrollTo(0, 0)
-      measure()
-    }
-
-    pin()
-    document.body.classList.add("sheet-scroll-lock")
-    window.addEventListener("resize", pin)
-    window.addEventListener("scroll", pin, { passive: true })
-    // The dialog's restore lands after the commit: run once more on the next frame and after it.
-    const frame = requestAnimationFrame(pin)
-    const timer = window.setTimeout(pin, 150)
-
-    return () => {
-      cancelAnimationFrame(frame)
-      window.clearTimeout(timer)
-      window.removeEventListener("resize", pin)
-      window.removeEventListener("scroll", pin)
-      document.body.classList.remove("sheet-scroll-lock")
-    }
-  }, [enabled])
-
-  return top
-}
-
 interface ReviewBoardProps {
   looks: Look[]
   job: BoardJob
-  /** The occasion the board was researched for, shown beside "Review board". */
-  brief?: string
   /** Live ingest progress; omitted on the static board. */
   progress?: { done: number; total: number; label: string } | null
   onBack?: () => void
@@ -192,7 +130,6 @@ function groupByBrand(looks: Look[]) {
 export function ReviewBoard({
   looks,
   job,
-  brief,
   progress,
   onBack,
   onRemoveLook,
@@ -206,10 +143,7 @@ export function ReviewBoard({
   reseeding = false,
 }: ReviewBoardProps) {
   const [added, setAdded] = useState<string[]>([])
-  const [sendState, setSendState] = useState<"idle" | "sent">("idle")
-  const router = useRouter()
-  /** Where the sheet starts: below the demo guide and site header, so they stay on screen. */
-  const sheetTop = useSheetChromeTop(chrome === "sheet")
+  const [sendState, setSendState] = useState<"idle" | "needs-backend">("idle")
 
   // Removing is a soft delete: the look leaves the board but stays in the bin until it is
   // restored. Nothing is persisted, so the seeded board comes back on reload.
@@ -230,16 +164,6 @@ export function ReviewBoard({
   }, [looks, removedIds])
   const grouped = useMemo(() => groupByBrand(visible), [visible])
   const addedLooks = useMemo(() => visible.filter((l) => added.includes(l.id)), [visible, added])
-
-  /** The demo client link: this shortlist, handed to Act 2 in this tab. */
-  const sendToClient = () => {
-    if (!addedLooks.length) return
-    // Same storage the board uses: `/client` reads it back, so the link carries the shortlist
-    // rather than the seeded fixture set.
-    storeBoard({ job, looks: addedLooks })
-    setSendState("sent")
-    router.push("/client")
-  }
 
   // The pattern across the board, read in the browser and shown as chips under the title. It
   // follows the pictures that are still on the board, so a delete shifts what the board reads as.
@@ -266,13 +190,10 @@ export function ReviewBoard({
     }
   }, [tasteSources])
 
-  const toggleAdded = (id: string) => {
-    setSendState("idle")
+  const toggleAdded = (id: string) =>
     setAdded((current) => (current.includes(id) ? current.filter((x) => x !== id) : [...current, id]))
-  }
 
   const removeLook = (look: Look) => {
-    setSendState("idle")
     setFocus(look.brand)
     const row = visible.filter((entry) => entry.brand === look.brand && entry.id !== look.id)
     setRemoved((current) => (current.some((entry) => entry.id === look.id) ? current : [...current, look]))
@@ -285,7 +206,6 @@ export function ReviewBoard({
 
   /** Remove a house from the board: every look goes to the bin, so the house can come back. */
   const removeBrand = (brand: string, row: Look[]) => {
-    setSendState("idle")
     // If the chips were reading this house, they fall back to the board rather than vanishing.
     setFocus((current) => (current === brand ? null : current))
     setRemoved((current) => {
@@ -303,15 +223,12 @@ export function ReviewBoard({
           ? "fixed inset-0 z-50 overflow-y-auto bg-background"
           : "relative bg-background"
       }
-      style={chrome === "sheet" ? { top: sheetTop } : undefined}
     >
       <header className="sticky top-0 z-10 border-b border-border bg-background">
         {/* Left: what the job is. Right: when it is due and where it goes. */}
         <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-6 py-5 md:flex-row md:items-start md:gap-6 md:px-10">
           <div className="flex min-w-0 flex-col gap-1">
-            <p className="text-[10px] tracking-[0.02em] text-muted-foreground">
-              Review board{brief ? ` · ${brief}` : ""}
-            </p>
+            <p className="text-[10px] tracking-[0.02em] text-muted-foreground">Review board</p>
             <div className="flex items-center gap-3">
               <h2 className="min-w-0 text-[clamp(30px,3.4vw,46px)] font-semibold leading-[0.95] tracking-[-0.035em] text-foreground">
                 {job.description.trim() || job.title.trim() || "Untitled client"}
@@ -477,34 +394,20 @@ export function ReviewBoard({
                     Hover a look and press + to shortlist it.
                   </p>
                 )}
-                <Button className="mt-4 w-full" disabled={added.length === 0} onClick={sendToClient}>
-                  {sendState === "sent" ? "Send again" : "Send to client"}
+                {/* The action stays: pressing it explains why nothing can be minted here, it does
+                    not consume the control. */}
+                <Button
+                  className="mt-4 w-full"
+                  disabled={added.length === 0}
+                  onClick={() => setSendState("needs-backend")}
+                >
+                  Send to client
                 </Button>
-                {sendState === "sent" ? (
-                  <div
-                    role="status"
-                    className="mt-3 rounded-md border border-border bg-muted p-3 text-[12px] leading-snug text-foreground"
-                  >
-                    <p>
-                      Client link ready — {addedLooks.length} look
-                      {addedLooks.length === 1 ? "" : "s"} for {job.description || "your client"}. Act 2
-                      now opens this shortlist.
-                    </p>
-                    <div className="mt-2 flex flex-wrap items-center gap-3">
-                      <Link href="/client" className="underline underline-offset-2">
-                        Open the client page →
-                      </Link>
-                      <button
-                        type="button"
-                        className="text-[11px] text-muted-foreground underline underline-offset-2"
-                        onClick={() => {
-                          void navigator.clipboard?.writeText(`${window.location.origin}/client`)
-                        }}
-                      >
-                        copy link
-                      </button>
-                    </div>
-                  </div>
+                {sendState === "needs-backend" ? (
+                  <p role="status" className="mt-3 rounded-md border border-border bg-muted p-3 text-[12px] leading-snug text-foreground">
+                    Held in the browser. Minting the client link and emailing it needs the database
+                    connection, so nothing was sent.
+                  </p>
                 ) : null}
               </PopoverContent>
             </Popover>

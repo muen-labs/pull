@@ -11,7 +11,6 @@
  *
  * Static surface: decisions live in this page's state and nothing is sent.
  */
-import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
 import { Brush, Check, Eye, EyeOff, X } from "lucide-react"
 
@@ -194,14 +193,8 @@ export function ClientBoard({ job, looks }: { job: ClientBoardJob; looks: Look[]
                 <b className="font-medium text-foreground">{remaining}</b> to review
               </span>
               {sent ? (
-                <span className="flex flex-col items-end gap-1 text-[12px] text-success">
-                  Sent to your stylist
-                  <Link
-                    href="/requests"
-                    className="text-[11px] font-normal text-muted-foreground underline underline-offset-2"
-                  >
-                    See the request emails →
-                  </Link>
+                <span className="text-[12px] text-success">
+                  Sent — Juje has the approved looks and your markups
                 </span>
               ) : (
                 <Button onClick={submit} disabled={approved.length === 0}>

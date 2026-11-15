@@ -5,8 +5,7 @@
  * session). This route renders it against the seeded fixture set so the screen
  * can be designed without a database: drafts are local and nothing is sent.
  */
-import { RequestsFromReview } from "@/components/studio-view/RequestsFromReview"
-import type { RequestBrand } from "@/components/studio-view/RequestEmails"
+import { RequestEmails, type RequestBrand } from "@/components/studio-view/RequestEmails"
 import { seededLooks } from "@/lib/fixtures"
 
 export const metadata = { title: "Pull — request emails" }
@@ -36,8 +35,8 @@ export default function RequestsPage() {
   const brands = [...byBrand.values()].slice(0, 3)
 
   return (
-    <RequestsFromReview
-      fallbackJob={{
+    <RequestEmails
+      job={{
         client: "Timothée Chalamet",
         title: "Dune Tour",
         shootDate: "2027-11-12",
@@ -45,7 +44,8 @@ export default function RequestsPage() {
         returnDate: "2027-11-22",
         shipTo: "Pull Studio · 12 Mercer St, New York, NY 10013",
       }}
-      fallbackBrands={brands}
+      brands={brands}
+      seeded
     />
   )
 }

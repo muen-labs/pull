@@ -13,8 +13,3 @@ docs/submission/
 e2e/artifacts/
 playwright-report/
 test-results/
-
-# Agent skill packs (installed by `npx skills add`), not product source.
-.agents/
-/agent/
-skills-lock.json

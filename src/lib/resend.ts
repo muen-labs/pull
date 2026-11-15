@@ -46,10 +46,10 @@ export async function sendEmail(input: SendInput): Promise<{ id: string }> {
  * Demo mail capture. Without a verified sending domain Resend's `onboarding@resend.dev` sender can
  * only reach the account owner's own address — every other recipient is a hard 403.
  *
- * With RESEND_REDIRECT_TO set, any message addressed to someone outside the capture list is
- * delivered to that one inbox instead, with the real recipients moved into the subject. Act 2's
- * request emails can then be read for real before a domain exists. Never set this when sending for
- * real. (The capture list is still called AUTH_ALLOWED_EMAIL; it used to gate sign-in too.)
+ * With RESEND_REDIRECT_TO set, any message addressed to someone other than the allow-listed stylist
+ * is delivered to that one inbox instead, with the real recipients moved into the subject. Act 2's
+ * request emails can then be read for real before a domain exists. Mail to the stylist is untouched,
+ * so magic-link login still lands in the right inbox. Never set this when sending for real.
  */
 function capture(addressedTo: string[], subject: string, html: string) {
   const redirectTo = process.env.RESEND_REDIRECT_TO?.trim()
@@ -79,3 +79,17 @@ export async function listDomains(): Promise<{ name: string; status: string }[]>
   return body.data ?? []
 }
 
+/** One template for the demo; later per-brand templates live in the agent. */
+export function magicLinkEmail(url: string): { subject: string; html: string } {
+  return {
+    subject: "Your Pull sign-in link",
+    html: `
+      <div style="font-family:Inter,system-ui,sans-serif;max-width:520px">
+        <p style="font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.04em;color:#6b6a66">Pull.</p>
+        <h1 style="font-size:22px;letter-spacing:-.02em">Sign in</h1>
+        <p style="color:#2c2c2b">This link signs you in to the Pull studio for 15 minutes.</p>
+        <p><a href="${url}" style="display:inline-block;background:#0a0a0a;color:#f9f9f8;padding:12px 20px;border-radius:999px;text-decoration:none">Open Pull</a></p>
+        <p style="color:#8f8b85;font-size:12px">If you didn't request this, ignore it.</p>
+      </div>`,
+  }
+}

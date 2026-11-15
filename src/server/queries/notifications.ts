@@ -34,7 +34,7 @@ function stamp(date: Date): string {
 }
 
 /** Reviewed boards the stylist has not seen yet, newest first. */
-export async function unreadReviews(stylistId: string, limit = 10): Promise<ReviewNotice[]> {
+export async function unreadReviews(workspaceId: string, limit = 10): Promise<ReviewNotice[]> {
   const reviewed = await db()
     .select({
       id: jobs.id,
@@ -45,7 +45,7 @@ export async function unreadReviews(stylistId: string, limit = 10): Promise<Revi
     .from(jobs)
     .where(
       and(
-        eq(jobs.workspaceId, stylistId),
+        eq(jobs.workspaceId, workspaceId),
         isNotNull(jobs.reviewSubmittedAt),
         or(isNull(jobs.reviewSeenAt), lt(jobs.reviewSeenAt, jobs.reviewSubmittedAt)),
       ),
