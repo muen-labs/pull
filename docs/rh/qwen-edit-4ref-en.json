@@ -1,0 +1,988 @@
+{
+ "id": "c83a449b-1c8c-49cb-b651-36cbe36f2c0e",
+ "revision": 0,
+ "last_node_id": 12,
+ "last_link_id": 13,
+ "nodes": [
+  {
+   "id": 1,
+   "type": "UNETLoader",
+   "pos": [
+    40,
+    120
+   ],
+   "size": [
+    460,
+    90
+   ],
+   "flags": {},
+   "order": 0,
+   "mode": 0,
+   "inputs": [
+    {
+     "label": "unet_name",
+     "name": "unet_name",
+     "type": "COMBO",
+     "widget": {
+      "name": "unet_name"
+     },
+     "link": null
+    },
+    {
+     "label": "weight_dtype",
+     "name": "weight_dtype",
+     "type": "COMBO",
+     "widget": {
+      "name": "weight_dtype"
+     },
+     "link": null
+    }
+   ],
+   "outputs": [
+    {
+     "label": "MODEL",
+     "name": "MODEL",
+     "type": "MODEL",
+     "links": [
+      1
+     ]
+    }
+   ],
+   "title": "Qwen-Image-2.1 base model (bf16)",
+   "properties": {
+    "Node name for S&R": "UNETLoader",
+    "widget_ue_connectable": {}
+   },
+   "widgets_values": [
+    "qwen_image_2.1_bf16.safetensors",
+    "default"
+   ],
+   "widgets_values_named": {
+    "unet_name": "qwen_image_2.1_bf16.safetensors",
+    "weight_dtype": "default"
+   },
+   "color": "#232",
+   "bgcolor": "#353"
+  },
+  {
+   "id": 2,
+   "type": "CLIPLoader",
+   "pos": [
+    40,
+    260
+   ],
+   "size": [
+    460,
+    110
+   ],
+   "flags": {},
+   "order": 1,
+   "mode": 0,
+   "inputs": [
+    {
+     "label": "clip_name",
+     "name": "clip_name",
+     "type": "COMBO",
+     "widget": {
+      "name": "clip_name"
+     },
+     "link": null
+    },
+    {
+     "label": "type",
+     "name": "type",
+     "type": "COMBO",
+     "widget": {
+      "name": "type"
+     },
+     "link": null
+    },
+    {
+     "label": "device",
+     "name": "device",
+     "shape": 7,
+     "type": "COMBO",
+     "widget": {
+      "name": "device"
+     },
+     "link": null
+    }
+   ],
+   "outputs": [
+    {
+     "label": "CLIP",
+     "name": "CLIP",
+     "type": "CLIP",
+     "links": [
+      2
+     ]
+    }
+   ],
+   "title": "Qwen3-VL-8B text encoder",
+   "properties": {
+    "Node name for S&R": "CLIPLoader",
+    "widget_ue_connectable": {}
+   },
+   "widgets_values": [
+    "qwen3vl_8b_bf16.safetensors",
+    "qwen_image",
+    "default"
+   ],
+   "widgets_values_named": {
+    "clip_name": "qwen3vl_8b_bf16.safetensors",
+    "type": "qwen_image",
+    "device": "default"
+   },
+   "color": "#232",
+   "bgcolor": "#353"
+  },
+  {
+   "id": 3,
+   "type": "VAELoader",
+   "pos": [
+    40,
+    420
+   ],
+   "size": [
+    460,
+    80
+   ],
+   "flags": {},
+   "order": 2,
+   "mode": 0,
+   "inputs": [
+    {
+     "label": "vae_name",
+     "name": "vae_name",
+     "type": "COMBO",
+     "widget": {
+      "name": "vae_name"
+     },
+     "link": null
+    }
+   ],
+   "outputs": [
+    {
+     "label": "VAE",
+     "name": "VAE",
+     "type": "VAE",
+     "links": [
+      6,
+      11
+     ]
+    }
+   ],
+   "title": "Qwen-Image-2.1 VAE",
+   "properties": {
+    "Node name for S&R": "VAELoader",
+    "widget_ue_connectable": {}
+   },
+   "widgets_values": [
+    "qwen_image_2.1_vae_bf16.safetensors"
+   ],
+   "widgets_values_named": {
+    "vae_name": "qwen_image_2.1_vae_bf16.safetensors"
+   },
+   "color": "#232",
+   "bgcolor": "#353"
+  },
+  {
+   "id": 4,
+   "type": "LoadImage",
+   "pos": [
+    40,
+    560
+   ],
+   "size": [
+    420,
+    220
+   ],
+   "flags": {},
+   "order": 3,
+   "mode": 0,
+   "inputs": [
+    {
+     "label": "image",
+     "name": "image",
+     "type": "COMBO",
+     "widget": {
+      "name": "image"
+     },
+     "link": null
+    },
+    {
+     "label": "upload",
+     "name": "upload",
+     "type": "IMAGEUPLOAD",
+     "widget": {
+      "name": "upload"
+     },
+     "link": null
+    }
+   ],
+   "outputs": [
+    {
+     "label": "IMAGE",
+     "name": "IMAGE",
+     "type": "IMAGE",
+     "links": [
+      3
+     ]
+    },
+    {
+     "label": "MASK",
+     "name": "MASK",
+     "type": "MASK",
+     "links": null
+    }
+   ],
+   "title": "Main image \u2014 the client (required)",
+   "properties": {
+    "Node name for S&R": "LoadImage",
+    "widget_ue_connectable": {}
+   },
+   "widgets_values": [
+    "None",
+    "image"
+   ],
+   "widgets_values_named": {
+    "image": "None",
+    "upload": "image"
+   },
+   "color": "#223",
+   "bgcolor": "#335"
+  },
+  {
+   "id": 5,
+   "type": "LoadImage",
+   "pos": [
+    40,
+    820
+   ],
+   "size": [
+    420,
+    220
+   ],
+   "flags": {},
+   "order": 4,
+   "mode": 0,
+   "inputs": [
+    {
+     "label": "image",
+     "name": "image",
+     "type": "COMBO",
+     "widget": {
+      "name": "image"
+     },
+     "link": null
+    },
+    {
+     "label": "upload",
+     "name": "upload",
+     "type": "IMAGEUPLOAD",
+     "widget": {
+      "name": "upload"
+     },
+     "link": null
+    }
+   ],
+   "outputs": [
+    {
+     "label": "IMAGE",
+     "name": "IMAGE",
+     "type": "IMAGE",
+     "links": [
+      4
+     ]
+    },
+    {
+     "label": "MASK",
+     "name": "MASK",
+     "type": "MASK",
+     "links": null
+    }
+   ],
+   "title": "Reference 1 \u2014 jacket",
+   "properties": {
+    "Node name for S&R": "LoadImage",
+    "widget_ue_connectable": {}
+   },
+   "widgets_values": [
+    "None",
+    "image"
+   ],
+   "widgets_values_named": {
+    "image": "None",
+    "upload": "image"
+   },
+   "color": "#223",
+   "bgcolor": "#335"
+  },
+  {
+   "id": 6,
+   "type": "LoadImage",
+   "pos": [
+    40,
+    1080
+   ],
+   "size": [
+    420,
+    220
+   ],
+   "flags": {},
+   "order": 5,
+   "mode": 0,
+   "inputs": [
+    {
+     "label": "image",
+     "name": "image",
+     "type": "COMBO",
+     "widget": {
+      "name": "image"
+     },
+     "link": null
+    },
+    {
+     "label": "upload",
+     "name": "upload",
+     "type": "IMAGEUPLOAD",
+     "widget": {
+      "name": "upload"
+     },
+     "link": null
+    }
+   ],
+   "outputs": [
+    {
+     "label": "IMAGE",
+     "name": "IMAGE",
+     "type": "IMAGE",
+     "links": [
+      5
+     ]
+    },
+    {
+     "label": "MASK",
+     "name": "MASK",
+     "type": "MASK",
+     "links": null
+    }
+   ],
+   "title": "Reference 2 \u2014 top",
+   "properties": {
+    "Node name for S&R": "LoadImage",
+    "widget_ue_connectable": {}
+   },
+   "widgets_values": [
+    "None",
+    "image"
+   ],
+   "widgets_values_named": {
+    "image": "None",
+    "upload": "image"
+   },
+   "color": "#223",
+   "bgcolor": "#335"
+  },
+  {
+   "id": 7,
+   "type": "TextEncodeQwenImage21",
+   "pos": [
+    560,
+    100
+   ],
+   "size": [
+    520,
+    286
+   ],
+   "flags": {},
+   "order": 7,
+   "mode": 0,
+   "inputs": [
+    {
+     "label": "clip",
+     "name": "clip",
+     "type": "CLIP",
+     "link": 2
+    },
+    {
+     "label": "Picture 11",
+     "name": "images.image_1",
+     "shape": 7,
+     "type": "IMAGE",
+     "link": 3
+    },
+    {
+     "label": "Picture 22",
+     "name": "images.image_2",
+     "shape": 7,
+     "type": "IMAGE",
+     "link": 4
+    },
+    {
+     "label": "Picture 33",
+     "name": "images.image_3",
+     "shape": 7,
+     "type": "IMAGE",
+     "link": 5
+    },
+    {
+     "label": "Picture 44",
+     "name": "images.image_4",
+     "shape": 7,
+     "type": "IMAGE",
+     "link": 13
+    },
+    {
+     "label": "Picture 55",
+     "name": "images.image_5",
+     "shape": 7,
+     "type": "IMAGE",
+     "link": null
+    },
+    {
+     "label": "vae",
+     "name": "vae",
+     "shape": 7,
+     "type": "VAE",
+     "link": 6
+    },
+    {
+     "label": "prompt",
+     "name": "prompt",
+     "type": "STRING",
+     "widget": {
+      "name": "prompt"
+     },
+     "link": null
+    },
+    {
+     "label": "negative_prompt",
+     "name": "negative_prompt",
+     "type": "STRING",
+     "widget": {
+      "name": "negative_prompt"
+     },
+     "link": null
+    },
+    {
+     "label": "resolution",
+     "name": "resolution",
+     "type": "INT",
+     "widget": {
+      "name": "resolution"
+     },
+     "link": null
+    }
+   ],
+   "outputs": [
+    {
+     "label": "positive",
+     "name": "positive",
+     "type": "CONDITIONING",
+     "links": [
+      7
+     ]
+    },
+    {
+     "label": "negative",
+     "name": "negative",
+     "type": "CONDITIONING",
+     "links": [
+      8
+     ]
+    },
+    {
+     "label": "latent",
+     "name": "latent",
+     "type": "LATENT",
+     "links": [
+      9
+     ]
+    }
+   ],
+   "title": "Edit instruction",
+   "properties": {
+    "Node name for S&R": "TextEncodeQwenImage21",
+    "widget_ue_connectable": {}
+   },
+   "widgets_values": [
+    "Edit the main image. A full-body editorial lookbook photograph of the person in <Picture 1>, wearing the jacket from <Picture 2> and the trousers from <Picture 3>. Seamless light-grey studio floor, soft even daylight, 35mm film grain, natural skin texture. One single frame, no grid, no panels, no collage. <Picture 4> is unused if empty; describe any extra garment in words.",
+    "",
+    1024
+   ],
+   "widgets_values_named": {
+    "prompt": "",
+    "negative_prompt": "",
+    "resolution": 1024
+   },
+   "color": "#223",
+   "bgcolor": "#335"
+  },
+  {
+   "id": 8,
+   "type": "KSampler",
+   "pos": [
+    1140,
+    160
+   ],
+   "size": [
+    420,
+    290
+   ],
+   "flags": {},
+   "order": 8,
+   "mode": 0,
+   "inputs": [
+    {
+     "label": "model",
+     "name": "model",
+     "type": "MODEL",
+     "link": 1
+    },
+    {
+     "label": "positive",
+     "name": "positive",
+     "type": "CONDITIONING",
+     "link": 7
+    },
+    {
+     "label": "negative",
+     "name": "negative",
+     "type": "CONDITIONING",
+     "link": 8
+    },
+    {
+     "label": "latent_image",
+     "name": "latent_image",
+     "type": "LATENT",
+     "link": 9
+    },
+    {
+     "label": "seed",
+     "name": "seed",
+     "type": "INT",
+     "widget": {
+      "name": "seed"
+     },
+     "link": null
+    },
+    {
+     "label": "steps",
+     "name": "steps",
+     "type": "INT",
+     "widget": {
+      "name": "steps"
+     },
+     "link": null
+    },
+    {
+     "label": "cfg",
+     "name": "cfg",
+     "type": "FLOAT",
+     "widget": {
+      "name": "cfg"
+     },
+     "link": null
+    },
+    {
+     "label": "sampler_name",
+     "name": "sampler_name",
+     "type": "COMBO",
+     "widget": {
+      "name": "sampler_name"
+     },
+     "link": null
+    },
+    {
+     "label": "scheduler",
+     "name": "scheduler",
+     "type": "COMBO",
+     "widget": {
+      "name": "scheduler"
+     },
+     "link": null
+    },
+    {
+     "label": "denoise",
+     "name": "denoise",
+     "type": "FLOAT",
+     "widget": {
+      "name": "denoise"
+     },
+     "link": null
+    }
+   ],
+   "outputs": [
+    {
+     "label": "LATENT",
+     "name": "LATENT",
+     "type": "LATENT",
+     "links": [
+      10
+     ]
+    }
+   ],
+   "title": "Sampler \u2014 20 steps, quality first",
+   "properties": {
+    "Node name for S&R": "KSampler",
+    "widget_ue_connectable": {}
+   },
+   "widgets_values": [
+    0,
+    "randomize",
+    20,
+    2.5,
+    "euler",
+    "simple",
+    1
+   ],
+   "widgets_values_named": {
+    "seed": 0,
+    "control_after_generate": "randomize",
+    "steps": 20,
+    "cfg": 2.5,
+    "sampler_name": "euler",
+    "scheduler": "simple",
+    "denoise": 1
+   },
+   "color": "#232",
+   "bgcolor": "#353"
+  },
+  {
+   "id": 9,
+   "type": "VAEDecode",
+   "pos": [
+    1600,
+    180
+   ],
+   "size": [
+    300,
+    80
+   ],
+   "flags": {},
+   "order": 9,
+   "mode": 0,
+   "inputs": [
+    {
+     "label": "samples",
+     "name": "samples",
+     "type": "LATENT",
+     "link": 10
+    },
+    {
+     "label": "vae",
+     "name": "vae",
+     "type": "VAE",
+     "link": 11
+    }
+   ],
+   "outputs": [
+    {
+     "label": "IMAGE",
+     "name": "IMAGE",
+     "type": "IMAGE",
+     "links": [
+      12
+     ]
+    }
+   ],
+   "title": "Decode to image",
+   "properties": {
+    "Node name for S&R": "VAEDecode",
+    "widget_ue_connectable": {}
+   },
+   "color": "#232",
+   "bgcolor": "#353"
+  },
+  {
+   "id": 10,
+   "type": "SaveImage",
+   "pos": [
+    1940,
+    180
+   ],
+   "size": [
+    400,
+    220
+   ],
+   "flags": {},
+   "order": 10,
+   "mode": 0,
+   "inputs": [
+    {
+     "label": "images",
+     "name": "images",
+     "type": "IMAGE",
+     "link": 12
+    },
+    {
+     "label": "filename_prefix",
+     "name": "filename_prefix",
+     "type": "STRING",
+     "widget": {
+      "name": "filename_prefix"
+     },
+     "link": null
+    }
+   ],
+   "outputs": [
+    {
+     "label": "image_urls",
+     "name": "image_urls",
+     "type": "STRING",
+     "links": null
+    },
+    {
+     "label": "images",
+     "name": "images",
+     "type": "IMAGE",
+     "links": null
+    }
+   ],
+   "title": "Save the edited image",
+   "properties": {
+    "Node name for S&R": "SaveImage",
+    "widget_ue_connectable": {}
+   },
+   "widgets_values": [
+    "qwen21v2_edit"
+   ],
+   "widgets_values_named": {
+    "filename_prefix": "qwen21v2_edit"
+   },
+   "color": "#322",
+   "bgcolor": "#533"
+  },
+  {
+   "id": 11,
+   "type": "Note",
+   "pos": [
+    560,
+    420
+   ],
+   "size": [
+    520,
+    420
+   ],
+   "flags": {},
+   "order": 6,
+   "mode": 0,
+   "inputs": [],
+   "outputs": [],
+   "title": "How to use",
+   "properties": {
+    "widget_ue_connectable": {}
+   },
+   "widgets_values": [
+    "\u3010\u5343\u95ee2.1 \u56fe\u50cf\u7f16\u8f91 \u00b7 \u6700\u591a3\u56fe\u53c2\u8003\u3011\n\n\u4e3b\n\u56fe\n \n+\n \n\u6700\n\u591a\n2\n\u5f20\n\u53c2\n\u8003\n\u56fe\n\uff0c\n\u4e00\n\u53e5\n\u8bdd\n\u5b8c\n\u6210\n\u6539\n\u56fe\n\u3002\n\n\n\n\n\u3010\n\u600e\n\u4e48\n\u7528\n\u3011\n\n\n1\n.\n\u300c\n\u4e3b\n\u56fe\n\u300d\n\u5fc5\n\u4f20\n \n\u2014\n\u2014\n \n\u8981\n\u7f16\n\u8f91\n\u7684\n\u539f\n\u56fe\n\u3002\n\n\n2\n.\n\u300c\n\u53c2\n\u8003\n\u56fe\n1\n/\n2\n\u300d\n\u53ef\n\u9009\n \n\u2014\n\u2014\n \n\u6362\n\u88c5\n/\n\u6362\n\u80cc\n\u666f\n/\n\u98ce\n\u683c\n\u53c2\n\u8003\n\u65f6\n\u7528\n\u3002\n\n\n3\n.\n\u300c\n\u7f16\n\u8f91\n\u6307\n\u4ee4\n\u300d\n\u5199\n\u6e05\n\u695a\n\u6539\n\u4ec0\n\u4e48\n\uff0c\n\u4f8b\n\u5982\n\uff1a\n\n\n \n \n \n\u00b7\n \n\u628a\n\u80cc\n\u666f\n\u6362\n\u6210\n\u6d77\n\u8fb9\n\u65e5\n\u843d\n\n\n \n \n \n\u00b7\n \n\u53c2\n\u8003\n\u56fe\n2\n\u7684\n\u53d1\n\u578b\n\u6362\n\u5230\n\u4e3b\n\u56fe\n\u4eba\n\u7269\n\u4e0a\n\n\n \n \n \n\u00b7\n \n\u628a\n\u8863\n\u670d\n\u6539\n\u6210\n\u7ea2\n\u8272\n\u8fde\n\u8863\n\u88d9\n\uff0c\n\u4fdd\n\u6301\n\u59ff\n\u52bf\n\u4e0d\n\u53d8\n\n\n4\n.\n \n\u5206\n\u8fa8\n\u7387\n\u8ddf\n\u968f\n\u4e3b\n\u56fe\n\uff08\nr\ne\ns\no\nl\nu\nt\ni\no\nn\n=\n0\n \n\u5219\n\u4fdd\n\u6301\n\u539f\n\u5c3a\n\u5bf8\n\uff09\n\u3002\n\n\n\n\n\u3010\n\u7279\n\u70b9\n\u3011\n\n\n\u00b7\n \n\u5b98\n\u65b9\n\u539f\n\u751f\n\u7f16\n\u8f91\n\u67b6\n\u6784\n\uff0c\n\u53c2\n\u8003\n\u56fe\n\u4ee5\n \nV\nA\nE\n \nl\na\nt\ne\nn\nt\n \n\u62fc\n\u63a5\n\u8fdb\n\u5e8f\n\u5217\n\n\n\u00b7\n \n\u4e3b\n\u56fe\n\u4eba\n\u7269\n/\n\u6784\n\u56fe\n\u4fdd\n\u6301\n\u597d\n\uff0c\n\u6539\n\u54ea\n\u6539\n\u54ea\n\u4e0d\n\u504f\n\u79fb"
+   ],
+   "widgets_values_named": {
+    "text": "\u3010\u5343\u95ee2.1 \u56fe\u50cf\u7f16\u8f91 \u00b7 \u6700\u591a3\u56fe\u53c2\u8003\u3011\n\n\u4e3b\n\u56fe\n \n+\n \n\u6700\n\u591a\n2\n\u5f20\n\u53c2\n\u8003\n\u56fe\n\uff0c\n\u4e00\n\u53e5\n\u8bdd\n\u5b8c\n\u6210\n\u6539\n\u56fe\n\u3002\n\n\n\n\n\u3010\n\u600e\n\u4e48\n\u7528\n\u3011\n\n\n1\n.\n\u300c\n\u4e3b\n\u56fe\n\u300d\n\u5fc5\n\u4f20\n \n\u2014\n\u2014\n \n\u8981\n\u7f16\n\u8f91\n\u7684\n\u539f\n\u56fe\n\u3002\n\n\n2\n.\n\u300c\n\u53c2\n\u8003\n\u56fe\n1\n/\n2\n\u300d\n\u53ef\n\u9009\n \n\u2014\n\u2014\n \n\u6362\n\u88c5\n/\n\u6362\n\u80cc\n\u666f\n/\n\u98ce\n\u683c\n\u53c2\n\u8003\n\u65f6\n\u7528\n\u3002\n\n\n3\n.\n\u300c\n\u7f16\n\u8f91\n\u6307\n\u4ee4\n\u300d\n\u5199\n\u6e05\n\u695a\n\u6539\n\u4ec0\n\u4e48\n\uff0c\n\u4f8b\n\u5982\n\uff1a\n\n\n \n \n \n\u00b7\n \n\u628a\n\u80cc\n\u666f\n\u6362\n\u6210\n\u6d77\n\u8fb9\n\u65e5\n\u843d\n\n\n \n \n \n\u00b7\n \n\u53c2\n\u8003\n\u56fe\n2\n\u7684\n\u53d1\n\u578b\n\u6362\n\u5230\n\u4e3b\n\u56fe\n\u4eba\n\u7269\n\u4e0a\n\n\n \n \n \n\u00b7\n \n\u628a\n\u8863\n\u670d\n\u6539\n\u6210\n\u7ea2\n\u8272\n\u8fde\n\u8863\n\u88d9\n\uff0c\n\u4fdd\n\u6301\n\u59ff\n\u52bf\n\u4e0d\n\u53d8\n\n\n4\n.\n \n\u5206\n\u8fa8\n\u7387\n\u8ddf\n\u968f\n\u4e3b\n\u56fe\n\uff08\nr\ne\ns\no\nl\nu\nt\ni\no\nn\n=\n0\n \n\u5219\n\u4fdd\n\u6301\n\u539f\n\u5c3a\n\u5bf8\n\uff09\n\u3002\n\n\n\n\n\u3010\n\u7279\n\u70b9\n\u3011\n\n\n\u00b7\n \n\u5b98\n\u65b9\n\u539f\n\u751f\n\u7f16\n\u8f91\n\u67b6\n\u6784\n\uff0c\n\u53c2\n\u8003\n\u56fe\n\u4ee5\n \nV\nA\nE\n \nl\na\nt\ne\nn\nt\n \n\u62fc\n\u63a5\n\u8fdb\n\u5e8f\n\u5217\n\n\n\u00b7\n \n\u4e3b\n\u56fe\n\u4eba\n\u7269\n/\n\u6784\n\u56fe\n\u4fdd\n\u6301\n\u597d\n\uff0c\n\u6539\n\u54ea\n\u6539\n\u54ea\n\u4e0d\n\u504f\n\u79fb"
+   },
+   "color": "#432",
+   "bgcolor": "#653"
+  },
+  {
+   "id": 12,
+   "type": "LoadImage",
+   "pos": [
+    40,
+    1780
+   ],
+   "size": [
+    420,
+    220
+   ],
+   "flags": {},
+   "order": 5,
+   "mode": 0,
+   "inputs": [
+    {
+     "label": "image",
+     "name": "image",
+     "type": "COMBO",
+     "widget": {
+      "name": "image"
+     },
+     "link": null
+    },
+    {
+     "label": "upload",
+     "name": "upload",
+     "type": "IMAGEUPLOAD",
+     "widget": {
+      "name": "upload"
+     },
+     "link": null
+    }
+   ],
+   "outputs": [
+    {
+     "name": "IMAGE",
+     "type": "IMAGE",
+     "links": [
+      13
+     ],
+     "localized_name": "IMAGE",
+     "slot_index": 0
+    },
+    {
+     "name": "MASK",
+     "type": "MASK",
+     "links": null,
+     "localized_name": "MASK",
+     "slot_index": 1
+    }
+   ],
+   "title": "Reference 3 \u2014 trousers",
+   "properties": {
+    "Node name for S&R": "LoadImage",
+    "widget_ue_connectable": {}
+   },
+   "widgets_values": [
+    "None",
+    "image"
+   ],
+   "widgets_values_named": {
+    "image": "None",
+    "upload": "image"
+   },
+   "color": "#223",
+   "bgcolor": "#335"
+  }
+ ],
+ "links": [
+  [
+   1,
+   1,
+   0,
+   8,
+   0,
+   "MODEL"
+  ],
+  [
+   7,
+   7,
+   0,
+   8,
+   1,
+   "CONDITIONING"
+  ],
+  [
+   8,
+   7,
+   1,
+   8,
+   2,
+   "CONDITIONING"
+  ],
+  [
+   9,
+   7,
+   2,
+   8,
+   3,
+   "LATENT"
+  ],
+  [
+   10,
+   8,
+   0,
+   9,
+   0,
+   "LATENT"
+  ],
+  [
+   11,
+   3,
+   0,
+   9,
+   1,
+   "VAE"
+  ],
+  [
+   12,
+   9,
+   0,
+   10,
+   0,
+   "IMAGE"
+  ],
+  [
+   2,
+   2,
+   0,
+   7,
+   0,
+   "CLIP"
+  ],
+  [
+   3,
+   4,
+   0,
+   7,
+   1,
+   "IMAGE"
+  ],
+  [
+   4,
+   5,
+   0,
+   7,
+   2,
+   "IMAGE"
+  ],
+  [
+   5,
+   6,
+   0,
+   7,
+   3,
+   "IMAGE"
+  ],
+  [
+   6,
+   3,
+   0,
+   7,
+   6,
+   "VAE"
+  ],
+  [
+   13,
+   12,
+   0,
+   7,
+   4,
+   "IMAGE"
+  ]
+ ],
+ "groups": [],
+ "config": {},
+ "extra": {
+  "links_added_by_ue": [],
+  "ue_links": [],
+  "pixaromaGroups": [],
+  "0246.VERSION": [
+   0,
+   0,
+   4
+  ],
+  "ds": {
+   "scale": 1.1671841070450009,
+   "offset": [
+    588.5189179406084,
+    41.034982588272044
+   ]
+  },
+  "frontendVersion": "1.58.5",
+  "KKvideo_latentpreview": false,
+  "KKvideo_latentpreviewrate": 0,
+  "VHS_MetadataImage": true,
+  "VHS_KeepIntermediate": true,
+  "VHS_latentpreview": false,
+  "VHS_latentpreviewrate": 0
+ },
+ "version": 0.4
+}
