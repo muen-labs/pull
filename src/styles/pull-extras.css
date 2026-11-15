@@ -32,10 +32,13 @@
   --radius-card: 20px; /* the kit's --card-radius */
   --radius-media: 16px; /* the kit's --card-media-radius */
 
-  /* The raised card. The kit's `--card` is the wall's own grey; the house cards (muencollective.com,
-     probed live) are a near-white just above it — far lighter than the wall, but not so pure that the
-     white top highlight has nothing to sit on. `--plate` stays pure white for buttons and media. */
-  --card-raised: #fdfdfd;
+  /* The raised card, sampled off muencollective.com rather than chosen: its card body is #f6f6f6 —
+     the same value as that wall — and the top edge only separates because of the light, not the tone.
+     Sampled at 2x, the edge runs pure #ffffff for the first ~3px, falls off #fcfcfc → #f9f9f9, and is
+     back at the body tone by ~5px. That is `inset 0 3px 1px 0 #ffffff` in the shadow stack plus the
+     `::after` stroke; a near-white card had nothing for either to sit on. `--plate` stays pure white
+     for buttons and media, so an action inside a card still reads a shade brighter than the card. */
+  --card-raised: #f6f6f6;
 
   /* The client's pen. Magenta, not the brand red: it has to stay readable on top of a photograph and
      never be confused with a destructive state. Used by the markup dialog and read back by the
