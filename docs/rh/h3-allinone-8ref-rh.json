@@ -2,7 +2,7 @@
  "id": "3e340b9b-ba16-4771-aea7-66ee3204327e",
  "revision": 0,
  "last_node_id": 201,
- "last_link_id": 289,
+ "last_link_id": 297,
  "nodes": [
   {
    "id": 81,
@@ -429,32 +429,40 @@
      "type": "IMAGE",
      "links": [
       225,
-      226
+      294
      ]
     },
     {
      "label": "mask",
      "name": "mask",
      "type": "MASK",
-     "links": null
+     "links": [
+      294
+     ]
     },
     {
      "label": "original_size",
      "name": "original_size",
      "type": "BOX",
-     "links": null
+     "links": [
+      294
+     ]
     },
     {
      "label": "width",
      "name": "width",
      "type": "INT",
-     "links": null
+     "links": [
+      294
+     ]
     },
     {
      "label": "height",
      "name": "height",
      "type": "INT",
-     "links": null
+     "links": [
+      294
+     ]
     }
    ],
    "properties": {
@@ -728,33 +736,41 @@
      "name": "image",
      "type": "IMAGE",
      "links": [
-      229,
-      232
+      232,
+      290
      ]
     },
     {
      "label": "mask",
      "name": "mask",
      "type": "MASK",
-     "links": null
+     "links": [
+      290
+     ]
     },
     {
      "label": "original_size",
      "name": "original_size",
      "type": "BOX",
-     "links": null
+     "links": [
+      290
+     ]
     },
     {
      "label": "width",
      "name": "width",
      "type": "INT",
-     "links": null
+     "links": [
+      290
+     ]
     },
     {
      "label": "height",
      "name": "height",
      "type": "INT",
-     "links": null
+     "links": [
+      290
+     ]
     }
    ],
    "properties": {
@@ -977,32 +993,40 @@
      "type": "IMAGE",
      "links": [
       238,
-      239
+      297
      ]
     },
     {
      "label": "mask",
      "name": "mask",
      "type": "MASK",
-     "links": null
+     "links": [
+      297
+     ]
     },
     {
      "label": "original_size",
      "name": "original_size",
      "type": "BOX",
-     "links": null
+     "links": [
+      297
+     ]
     },
     {
      "label": "width",
      "name": "width",
      "type": "INT",
-     "links": null
+     "links": [
+      297
+     ]
     },
     {
      "label": "height",
      "name": "height",
      "type": "INT",
-     "links": null
+     "links": [
+      297
+     ]
     }
    ],
    "properties": {
@@ -1225,32 +1249,40 @@
      "type": "IMAGE",
      "links": [
       241,
-      242
+      292
      ]
     },
     {
      "label": "mask",
      "name": "mask",
      "type": "MASK",
-     "links": null
+     "links": [
+      292
+     ]
     },
     {
      "label": "original_size",
      "name": "original_size",
      "type": "BOX",
-     "links": null
+     "links": [
+      292
+     ]
     },
     {
      "label": "width",
      "name": "width",
      "type": "INT",
-     "links": null
+     "links": [
+      292
+     ]
     },
     {
      "label": "height",
      "name": "height",
      "type": "INT",
-     "links": null
+     "links": [
+      292
+     ]
     }
    ],
    "properties": {
@@ -1656,32 +1688,40 @@
      "type": "IMAGE",
      "links": [
       249,
-      250
+      295
      ]
     },
     {
      "label": "mask",
      "name": "mask",
      "type": "MASK",
-     "links": null
+     "links": [
+      295
+     ]
     },
     {
      "label": "original_size",
      "name": "original_size",
      "type": "BOX",
-     "links": null
+     "links": [
+      295
+     ]
     },
     {
      "label": "width",
      "name": "width",
      "type": "INT",
-     "links": null
+     "links": [
+      295
+     ]
     },
     {
      "label": "height",
      "name": "height",
      "type": "INT",
-     "links": null
+     "links": [
+      295
+     ]
     }
    ],
    "properties": {
@@ -2008,32 +2048,40 @@
      "type": "IMAGE",
      "links": [
       253,
-      254
+      296
      ]
     },
     {
      "label": "mask",
      "name": "mask",
      "type": "MASK",
-     "links": null
+     "links": [
+      296
+     ]
     },
     {
      "label": "original_size",
      "name": "original_size",
      "type": "BOX",
-     "links": null
+     "links": [
+      296
+     ]
     },
     {
      "label": "width",
      "name": "width",
      "type": "INT",
-     "links": null
+     "links": [
+      296
+     ]
     },
     {
      "label": "height",
      "name": "height",
      "type": "INT",
-     "links": null
+     "links": [
+      296
+     ]
     }
    ],
    "properties": {
@@ -2184,32 +2232,40 @@
      "type": "IMAGE",
      "links": [
       245,
-      246
+      293
      ]
     },
     {
      "label": "mask",
      "name": "mask",
      "type": "MASK",
-     "links": null
+     "links": [
+      293
+     ]
     },
     {
      "label": "original_size",
      "name": "original_size",
      "type": "BOX",
-     "links": null
+     "links": [
+      293
+     ]
     },
     {
      "label": "width",
      "name": "width",
      "type": "INT",
-     "links": null
+     "links": [
+      293
+     ]
     },
     {
      "label": "height",
      "name": "height",
      "type": "INT",
-     "links": null
+     "links": [
+      293
+     ]
     }
    ],
    "properties": {
@@ -2360,32 +2416,40 @@
      "type": "IMAGE",
      "links": [
       234,
-      235
+      291
      ]
     },
     {
      "label": "mask",
      "name": "mask",
      "type": "MASK",
-     "links": null
+     "links": [
+      291
+     ]
     },
     {
      "label": "original_size",
      "name": "original_size",
      "type": "BOX",
-     "links": null
+     "links": [
+      291
+     ]
     },
     {
      "label": "width",
      "name": "width",
      "type": "INT",
-     "links": null
+     "links": [
+      291
+     ]
     },
     {
      "label": "height",
      "name": "height",
      "type": "INT",
-     "links": null
+     "links": [
+      291
+     ]
     }
    ],
    "properties": {
@@ -2635,21 +2699,21 @@
      "name": "ref_images.ref_image_0",
      "shape": 7,
      "type": "IMAGE",
-     "link": 226
+     "link": 290
     },
     {
      "label": "ref_images.ref_image_1",
      "name": "ref_images.ref_image_1",
      "shape": 7,
      "type": "IMAGE",
-     "link": 229
+     "link": 291
     },
     {
      "label": "ref_images.ref_image_2",
      "name": "ref_images.ref_image_2",
      "shape": 7,
      "type": "IMAGE",
-     "link": 235
+     "link": 292
     },
     {
      "label": "ref_videos.ref_video_0",
@@ -2736,35 +2800,35 @@
      "name": "ref_images.ref_image_3",
      "shape": 7,
      "type": "IMAGE",
-     "link": 239
+     "link": 293
     },
     {
      "label": "ref_images.ref_image_4",
      "name": "ref_images.ref_image_4",
      "shape": 7,
      "type": "IMAGE",
-     "link": 242
+     "link": 294
     },
     {
      "label": "ref_images.ref_image_5",
      "name": "ref_images.ref_image_5",
      "shape": 7,
      "type": "IMAGE",
-     "link": 246
+     "link": 295
     },
     {
      "label": "ref_images.ref_image_6",
      "name": "ref_images.ref_image_6",
      "shape": 7,
      "type": "IMAGE",
-     "link": 250
+     "link": 296
     },
     {
      "label": "ref_images.ref_image_7",
      "name": "ref_images.ref_image_7",
      "shape": 7,
      "type": "IMAGE",
-     "link": 254
+     "link": 297
     },
     {
      "label": "ref_images.ref_image_8",
@@ -4410,30 +4474,6 @@
    "VAE"
   ],
   [
-   226,
-   161,
-   0,
-   77,
-   3,
-   "IMAGE"
-  ],
-  [
-   229,
-   162,
-   0,
-   77,
-   4,
-   "IMAGE"
-  ],
-  [
-   235,
-   163,
-   0,
-   77,
-   5,
-   "IMAGE"
-  ],
-  [
    215,
    78,
    0,
@@ -4442,40 +4482,64 @@
    "STRING"
   ],
   [
-   239,
-   164,
+   290,
+   162,
+   0,
+   77,
+   3,
+   "IMAGE"
+  ],
+  [
+   291,
+   163,
+   0,
+   77,
+   4,
+   "IMAGE"
+  ],
+  [
+   292,
+   165,
+   0,
+   77,
+   5,
+   "IMAGE"
+  ],
+  [
+   293,
+   166,
    0,
    77,
    16,
    "IMAGE"
   ],
   [
-   242,
-   165,
+   294,
+   161,
    0,
    77,
    17,
    "IMAGE"
   ],
   [
-   246,
-   166,
+   295,
+   167,
    0,
    77,
    18,
    "IMAGE"
   ],
   [
-   250,
-   167,
+   296,
+   168,
    0,
    77,
    19,
    "IMAGE"
   ],
   [
-   254,
-   168,
+   297,
+   164,
    0,
    77,
    20,
