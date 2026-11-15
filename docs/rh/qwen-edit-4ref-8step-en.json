@@ -1691,28 +1691,28 @@
      "link": 2
     },
     {
-     "label": "Reference 11 (Image-11)",
+     "label": "Reference 1 (Image-1)",
      "name": "images.image_1",
      "shape": 7,
      "type": "IMAGE",
      "link": 190
     },
     {
-     "label": "Reference 22 (Image-22)",
+     "label": "Reference 2 (Image-2)",
      "name": "images.image_2",
      "shape": 7,
      "type": "IMAGE",
      "link": 290
     },
     {
-     "label": "Reference 33 (Image-33)",
+     "label": "Reference 3 (Image-3)",
      "name": "images.image_3",
      "shape": 7,
      "type": "IMAGE",
      "link": 300
     },
     {
-     "label": "Reference 44 (Image-44)",
+     "label": "Reference 4 (Image-4)",
      "name": "images.image_4",
      "shape": 7,
      "type": "IMAGE",
