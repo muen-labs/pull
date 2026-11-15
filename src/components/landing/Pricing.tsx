@@ -52,13 +52,17 @@ const PLANS: Plan[] = [
   {
     id: "studio",
     name: "Studio",
-    blurb: "Four seats, with the shipping.",
+    blurb: "Three seats, with the shipping.",
     monthly: 59,
     annual: 49,
-    seats: "4 seats",
-    per: "4 seats",
+    seats: "3 seats",
+    per: "3 seats",
     features: [
-      "Four seats — the founder and three assistants",
+      /* $59 against $29 a seat is two seats paid and the third on the house — said plainly, because
+         "per seat" at $59 is what made the plan look expensive. */
+      "Three seats — the founder and two assistants",
+      "One of them free — you pay for two",
+      "All three seats share one agent wallet",
       "Everything in Solo",
       "Showroom links, parcel sizes and labels",
       "The contacts book, with agent matching",
