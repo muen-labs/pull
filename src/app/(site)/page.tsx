@@ -342,8 +342,11 @@ export default function LandingPage() {
                 </g>
               </svg>
 
-              <figure className="w-[340px] shrink-0">
-                <div className="relative aspect-[2/3] overflow-hidden rounded-[16px] bg-muted">
+              {/* The render is the output card of the graph, so it is a card: the media is inset
+                  into the plate and the filename sits inside with it, the way every other card in
+                  the band holds its own caption. */}
+              <figure className="plate w-[340px] shrink-0 p-3">
+                <div className="relative aspect-[2/3] overflow-hidden rounded-[14px] bg-muted">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/landing/final-look-2x3.jpg"
@@ -352,12 +355,12 @@ export default function LandingPage() {
                     loading="lazy"
                   />
                 </div>
-                <figcaption className="flex flex-wrap items-baseline justify-between gap-2 px-0.5 pt-3">
+                <figcaption className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1 px-1 pt-3">
                   <span className="font-mono text-[11px] tracking-[0.02em] text-muted-foreground">
                     look-27-v1.png
                   </span>
-                  <span className="font-mono text-[11px] tracking-[0.02em] text-muted-foreground">
-                    gpt-image-2 · the client, wearing all three
+                  <span className="font-mono text-[10px] tracking-[0.02em] text-muted-foreground">
+                    gpt-image-2 · all three
                   </span>
                 </figcaption>
               </figure>
@@ -396,8 +399,8 @@ export default function LandingPage() {
                   </div>
                 ))}
               </div>
-              <figure className="mt-3">
-                <div className="relative mx-auto aspect-[2/3] w-[240px] overflow-hidden rounded-[16px] bg-muted">
+              <figure className="plate mt-3 p-3">
+                <div className="relative mx-auto aspect-[2/3] w-[240px] overflow-hidden rounded-[14px] bg-muted">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/landing/final-look-2x3.jpg"
@@ -406,8 +409,8 @@ export default function LandingPage() {
                     loading="lazy"
                   />
                 </div>
-                <figcaption className="mt-2 text-center font-mono text-[10px] tracking-[0.02em] text-muted-foreground">
-                  gpt-image-2 · the client, wearing all three
+                <figcaption className="mt-3 text-center font-mono text-[10px] tracking-[0.02em] text-muted-foreground">
+                  look-27-v1.png · gpt-image-2 · all three
                 </figcaption>
               </figure>
             </div>
